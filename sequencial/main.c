@@ -79,14 +79,19 @@ void bucket_sort(size_t size, int* arr){
         buckets[i] = make(size);
 
     for (size_t i = 0; i < size; i++){
-        size_t n_bucket = arr[i] * N_BUCKETS / (max - min);
-        n_bucket = n_bucket == N_BUCKETS ? n_bucket - 1 : n_bucket;
+        size_t n_bucket = (arr[i] + abs(min)) * N_BUCKETS / (abs(max + abs(min)));
+        n_bucket = n_bucket >= N_BUCKETS ? N_BUCKETS - 1 : n_bucket;
+
+        #ifdef NDEBUG
+        printf("%zu<- %d\n", n_bucket, arr[i]);
+        #endif
 
         insert(buckets[n_bucket], arr[i]);
     }
 
     for (size_t i = 0; i < N_BUCKETS; i++)
-        qsort(buckets[i]->array, buckets[i]->n_elem, sizeof(int), cmpfunc);
+        if (buckets[i]->n_elem > 1)
+            qsort(buckets[i]->array, buckets[i]->n_elem, sizeof(int), cmpfunc);
 
     buckets_to_arr(N_BUCKETS, buckets, arr);
 
@@ -104,12 +109,17 @@ void print_arr(int* arr, size_t size){
 }
 
 
-int main(){
-    static size_t size = 1000000;
+int main(int argc, char** argv){
+    struct Bucket* b = make(100);
 
-    struct Bucket* b = make(size);
-    for (size_t x = size; x > 0; x--)
-        insert(b, x);
+    FILE* file = fopen (argv[1], "r");
+    int v;
+    while (!feof (file)){
+        fscanf (file, "%d ", &v);
+        insert(b, v);
+    }
+
+    size_t size = b->n_elem;
 
     #ifdef NDEBUG
     print_arr(b->array, size);
@@ -117,9 +127,7 @@ int main(){
 
     bucket_sort(size, b->array);
 
-    #ifdef NDEBUG
     print_arr(b->array, size);
-    #endif
 
     free_bucket(b);
 
