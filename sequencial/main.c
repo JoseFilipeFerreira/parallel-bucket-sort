@@ -103,9 +103,8 @@ void bucket_sort(size_t size, int* arr){
 void print_arr(int* arr, size_t size){
     for(size_t i = 0; i < size; i++) {
         arr[i] = arr[i];
-        printf("%d ", arr[i]);
+        printf("%d\n", arr[i]);
     }
-    printf("\n");
 }
 
 
@@ -115,7 +114,7 @@ int main(int argc, char** argv){
     FILE* file = fopen (argv[1], "r");
     int v;
     while (!feof (file)){
-        fscanf (file, "%d ", &v);
+        fscanf (file, "%d\n", &v);
         insert(b, v);
     }
 

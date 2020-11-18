@@ -5,7 +5,7 @@ RANDOM_FILE= random.txt
 EXEC= bucket
 
 $(EXEC): main.c
-	$(CC) main.c -o $(EXEC)
+	$(CC) main.c -o $(EXEC) -std=c99
 
 debug: main.c
 	$(CC) -DNDEBUG -g main.c -o $(EXEC)
