@@ -1,5 +1,5 @@
 #include <unistd.h>
-#include <time.h>
+#include <omp.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -10,6 +10,7 @@ struct Bucket {
     size_t n_elem;
     size_t max_elem;
 };
+
 
 struct Bucket* make(size_t max){
     struct Bucket* block_arr = malloc(sizeof(struct Bucket));
@@ -25,27 +26,26 @@ void free_bucket(struct Bucket* b){
     free(b);
 }
 
-//This could write in res with no limits
 void buckets_to_arr(size_t size, struct Bucket* arr[size], int* res) {
     size_t w = 0;
     for(size_t bucket = 0; bucket < size; bucket++) {
-        #ifdef NDEBUG
-        printf("%zu: ", arr[bucket]->n_elem);
-        #endif
-        for(size_t elem = 0; elem < arr[bucket]->n_elem; elem++) {
+#ifdef NDEBUG
+        fprintf(stderr, "%zu: ", arr[bucket]->n_elem);
+#endif
+        for(size_t elem = 0; elem < arr[bucket]->n_elem; elem++) { //vectorized
             res[w++] = arr[bucket]->array[elem];
-            #ifdef NDEBUG
-            printf("%d ", arr[bucket]->array[elem]);
-            #endif
+#ifdef NDEBUG
+            fprintf(stderr, "%d ", arr[bucket]->array[elem]);
+#endif
         }
-        #ifdef NDEBUG
-        printf("\n");
-        #endif
+#ifdef NDEBUG
+        fprintf(stderr, "\n");
+#endif
     }
 }
 
 void insert(struct Bucket* arr, int elem){
-    if(arr->n_elem >= arr->max_elem){
+    if(arr->n_elem >= arr->max_elem){ //SIMD doesnt like this if
         arr->array = realloc(arr->array, sizeof(int) * arr->max_elem * 2);
         arr->max_elem *= 2;
     }
@@ -66,34 +66,40 @@ void bucket_sort(size_t size, int* arr){
 
     int max = arr[0];
     int min = arr[0];
-    for(size_t i = 1; i < size; i++) {
+    for(size_t i = 1; i < size; i++) { //vectorized
         if(arr[i] > max) max = arr[i];
         if(arr[i] < min) min = arr[i];
     }
 
-    #ifdef NDEBUG
-    printf("max: %d, min: %d\n", max, min);
-    #endif
+#ifdef NDEBUG
+    fprintf(stderr, "max: %d, min: %d\n", max, min);
+#endif
 
     struct Bucket* buckets[N_BUCKETS];
     for (size_t i = 0; i < N_BUCKETS; i++)
         buckets[i] = make(size);
-
-    for (size_t i = 0; i < size; i++){
-        size_t n_bucket = (arr[i] + abs(min)) * N_BUCKETS / (abs(max + abs(min)));
-        n_bucket = n_bucket >= N_BUCKETS ? N_BUCKETS - 1 : n_bucket;
-
-        #ifdef NDEBUG
-        printf("%zu<- %d\n", n_bucket, arr[i]);
-        #endif
-
-        insert(buckets[n_bucket], arr[i]);
+#pragma omp parallel
+    {
+#pragma omp for
+    for (size_t i = 0; i < N_BUCKETS; i++) {
+        for (size_t j = 0; j < size; j++){
+            size_t n_bucket = (arr[j] + abs(min)) * N_BUCKETS / (abs(max + abs(min)));
+            n_bucket = n_bucket >= N_BUCKETS ? N_BUCKETS - 1 : n_bucket;
+            if(n_bucket == i) {
+#ifdef NDEBUG
+                fprintf(stderr, "%zu<- %d\n", i, arr[j]);
+#endif
+                buckets[i]->array[buckets[i]->n_elem] = arr[j];
+                buckets[i]->n_elem++;
+            }
+        }
     }
 
+#pragma omp barrier
+#pragma omp for
     for (size_t i = 0; i < N_BUCKETS; i++)
-        if (buckets[i]->n_elem > 1)
-            qsort(buckets[i]->array, buckets[i]->n_elem, sizeof(int), cmpfunc);
-
+        qsort(buckets[i]->array, buckets[i]->n_elem, sizeof(int), cmpfunc);
+    }
     buckets_to_arr(N_BUCKETS, buckets, arr);
 
     for (size_t i = 0; i < N_BUCKETS; i++)
@@ -121,15 +127,13 @@ int main(int argc, char** argv){
 
     size_t size = b->n_elem;
 
-    #ifdef NDEBUG
+#ifdef NDEBUG
     print_arr(b->array, size);
-    #endif
-#include <time.h>
-    time_t start, end;
-    start = time(NULL);
+#endif
+
+    double time = omp_get_wtime(); 
     bucket_sort(size, b->array);
-    end = time(NULL);
-    fprintf(stderr, "%ld\n", end - start);
+    fprintf(stderr, "Time=%f\n", omp_get_wtime()-time); 
 
     print_arr(b->array, size);
 

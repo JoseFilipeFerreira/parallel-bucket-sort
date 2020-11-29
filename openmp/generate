@@ -1,0 +1,10 @@
+#!/bin/python
+import sys
+import random
+
+if len(sys.argv) == 4:
+    print("USAGE: generate MIN MAX AMOUNT OUTPUT_FILE")
+
+with open(sys.argv[4], "w+") as f:
+    for i in range(0,int(sys.argv[3])):
+        f.write(str(random.randint(int(sys.argv[1]),int(sys.argv[2]))) + '\n')
