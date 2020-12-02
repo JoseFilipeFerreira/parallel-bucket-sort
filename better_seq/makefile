@@ -2,13 +2,13 @@ CC= gcc
 
 RANDOM= generate
 RANDOM_FILE= random.txt
-EXEC= ../bin/bucket_omp
+EXEC= ../bin/bucket_seq_v2
 
 $(EXEC): main.c
-	$(CC) main.c -o $(EXEC) -std=c11 -O3 -ftree-vectorize -fopenmp
+	$(CC) main.c -o $(EXEC) -std=c11 -O3 -ftree-vectorize 
 
 debug: main.c
-	$(CC) -g main.c -o $(EXEC) -std=c11 -O3 -ftree-vectorize -fopenmp
+	$(CC) -g main.c -o $(EXEC) -std=c11 -O3 -ftree-vectorize 
 
 grind: $(EXEC) $(RANDOM_FILE)
 	valgrind --leak-check=full --show-reachable=no --show-leak-kinds=all ./$(EXEC) $(RANDOM_FILE)

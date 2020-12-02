@@ -2,6 +2,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <omp.h>
 
 #define N_BUCKETS 10
 
@@ -76,9 +77,13 @@ void bucket_sort(size_t size, int* arr){
     #endif
 
     struct Bucket* buckets[N_BUCKETS];
+#pragma omp parallel 
+    {
+#pragma omp for
     for (size_t i = 0; i < N_BUCKETS; i++)
         buckets[i] = make(size);
 
+#pragma omp for
     for (size_t i = 0; i < size; i++){
         size_t n_bucket = (arr[i] + abs(min)) * N_BUCKETS / (abs(max + abs(min)));
         n_bucket = n_bucket >= N_BUCKETS ? N_BUCKETS - 1 : n_bucket;
@@ -87,17 +92,22 @@ void bucket_sort(size_t size, int* arr){
         printf("%zu<- %d\n", n_bucket, arr[i]);
         #endif
 
+#pragma omp task depend(inout:buckets[n_bucket])
         insert(buckets[n_bucket], arr[i]);
     }
-
+#pragma omp taskwait
+#pragma omp for
     for (size_t i = 0; i < N_BUCKETS; i++)
         if (buckets[i]->n_elem > 1)
             qsort(buckets[i]->array, buckets[i]->n_elem, sizeof(int), cmpfunc);
 
+#pragma omp single
     buckets_to_arr(N_BUCKETS, buckets, arr);
 
+#pragma omp for
     for (size_t i = 0; i < N_BUCKETS; i++)
         free_bucket(buckets[i]);
+    }
 
 }
 
