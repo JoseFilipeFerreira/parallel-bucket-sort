@@ -1,0 +1,95 @@
+\documentclass[a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\usepackage{hyperref}
+\usepackage{a4wide}
+\hypersetup{pdftitle={PCP - OpenMP},
+pdfauthor={João Teixeira, José Ferreira},
+colorlinks=true,
+urlcolor=blue,
+linkcolor=black}
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{appendix}
+\usepackage{tikz}
+\usepackage{authblk}
+\usepackage{bashful}
+\usepackage{verbatim}
+\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage{mwe}
+\usepackage[parfill]{parskip}
+\usetikzlibrary{positioning,automata,decorations.markings}
+\AfterEndEnvironment{figure}{\noindent\ignorespaces}
+\AfterEndEnvironment{table}{\noindent\ignorespaces}
+
+\begin{document}
+
+\title{Paradigmas de Computação Paralela\\Bucket Sort com OpenMP}
+\author{João Teixeira (A85504) \and José Filipe Ferreira (A83683)}
+\date{\today}
+
+\begin{center}
+    \begin{minipage}{0.75\linewidth}
+        \centering
+        \includegraphics[width=0.4\textwidth]{images/eng.jpeg}\par\vspace{1cm}
+        \vspace{1.5cm}
+        \href{https://www.uminho.pt/PT}
+        {\color{black}{\scshape\LARGE Universidade do Minho}} \par
+        \vspace{1cm}
+        \href{https://www.di.uminho.pt/}
+        {\color{black}{\scshape\Large Departamento de Informática}} \par
+        \vspace{1.5cm}
+        \maketitle
+    \end{minipage}
+\end{center}
+
+\tableofcontents
+
+\pagebreak
+
+\chapter{Introdução}
+O algoritmo escolhido para o projeto da unidade curricular de computação
+paralela e distribuída foi o \textit{Bucket Sort}.
+
+Começamos por desenvolver uma versão sequencial do projeto e procedemos ao
+\textit{benchmarking} do programa resultante. Em seguida convertemos a
+implementação sequencial numa versão com utilização de memoria partilhada
+fazendo uso de \textit{OpenMP}.
+
+Ao longo deste relatório iremos descrever a metodologia utilizada e os
+resultados de \textit{benchmarking} obtidos ao longo deste projeto.
+
+\chapter{Sequencial}
+O \textit{Bucket Sort} consiste em definir um conjunto de N "baldes"
+inicialmente vazios. Em seguida os elementos do vetor a ser ordenado são
+distribuídos pelos baldes. O critério escolhido para esta distribuição foi
+calcular o máximo e o mínimo do vetor a ser ordenado e dividir os intervalos de
+valores de cada balde em intervalos do mesmo tamanho. Em seguida o conteúdo de
+cada balde é ordenado recorrendo ao \textit{quicksort} presente na
+\textit{standard library} de C. Finalmente todos os elementos são copiados um a
+um para o vetor original.
+
+Para testar se a primeira implementação sequencial produzia de facto vetores
+ordenados criamos um \textit{scrip} que permite gerar N testes aleatórios e
+comparar o resultado do nosso programa com o resultado de ordenar os valores
+com o comando \textit{sort} de \textit{bash}.
+
+TODO: INSERIR BENCHAMRKS
+
+\chapter{OpenMP}
+Fazendo uso da implementação sequencial descrita no capitulo anterior, começamos
+a conversão para uma versão com um modelo de memoria partilhada fazendo uso de
+\textit{OpenMP}.
+
+Tendo em conta a forma como a escrita em memória era efetuada, e como estamos
+perante um paradigma de memória partilhada, a versão inicial do algoritmo foi
+rescrita para eliminar a zona crítica na escrita para os \textit{buckets}.
+Embora a versão sequencial tenha ficado x\% mais lenta, o algoritmo tornou se
+muito mais escalável, visto o elevado custo da gestão de zonas críticas
+
+TODO: INSERIR BENCHAMRKS
+
+\end{document}

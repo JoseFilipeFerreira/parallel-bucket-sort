@@ -53,3 +53,7 @@ dkms.conf
 
 bucket*
 *.txt
+*.aux
+*.log
+*.out
+*.toc
