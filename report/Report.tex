@@ -73,22 +73,53 @@ cada balde é ordenado recorrendo ao \textit{quicksort} presente na
 um para o vetor original.
 
 Para testar se a primeira implementação sequencial produzia de facto vetores
-ordenados criamos um \textit{scrip} que permite gerar N testes aleatórios e
+ordenados criamos um \textit{script} que permite gerar N testes aleatórios e
 comparar o resultado do nosso programa com o resultado de ordenar os valores
 com o comando \textit{sort} de \textit{bash}.
 
+Numa implementação inicial desta versão sequencial, o algoritmo consistia em
+iterar sobre o array dos elementos a ordenar e inserir o elemento a processar no
+respetivo balde. Durante a paralelização deste, identificamos alguns problemas,
+que serão descritos em maior pormenor no capitulo \ref{chap:omp}, que nos levou
+a tomar uma abordagem diferente, em vez de iterar pelo array uma vez e colocar
+os elementos no respetivo balde, cada balde irá iterar pelo array, escolhendo os
+elementos que a ele lhe pertencem.
+
+Fazer isto aumentou a complexidade do algoritmo, passando de iterar uma vez pelo
+array, para N vezes, onde N é o número de baldes existentes. Consequência disto
+também os tempos de execução aumentarem.
+
 TODO: INSERIR BENCHAMRKS
 
-\chapter{OpenMP}
+\chapter{OpenMP} \label{chap:omp}
 Fazendo uso da implementação sequencial descrita no capitulo anterior, começamos
 a conversão para uma versão com um modelo de memoria partilhada fazendo uso de
 \textit{OpenMP}.
 
-Tendo em conta a forma como a escrita em memória era efetuada, e como estamos
-perante um paradigma de memória partilhada, a versão inicial do algoritmo foi
-rescrita para eliminar a zona crítica na escrita para os \textit{buckets}.
-Embora a versão sequencial tenha ficado x\% mais lenta, o algoritmo tornou se
-muito mais escalável, visto o elevado custo da gestão de zonas críticas
+Para a paralelização da primeira versão sequencial, começamos por tratar do
+ciclo mais longo que itera por todos os elementos do array. Ao fazer uma analise
+mais detalhada deste, deparamo-nos com a existencia de uma zona critica onde era
+escrito cada elemento no respetivo balde. Para tentar resolver o problema
+tentamos duas abordagens distintas, a utilização de tarefas e a declaração da
+zona critica. Em ambas as opções obtivemos resultados piores quando comparados
+com a sua versão sequencial, pois tanto a gestão de zonas criticas, bem como a
+gestão das tarefas são tarefas pesadas.
+
+Vendo estes resultados, tentamos adaptar o algoritmo para um formato mais
+paralelizavel, removendo a zona critica.
+
+Esta nova versão, verificamos que os tempos de execução paralelos estavam a baixar, com
+speedups consideráveis até às 16 threads. Embora o speedup esteja ligeiramente
+abaixo do pretendido, e afasta-se desse valor à medida que existem mais threads,
+isto deve-se ao número de elementos por balde não seja uniforme, e o tempo de
+execução só consegue ser tão baixo quanto o balde mais lento de processar, e à
+medida que há mais threads em trabalho, mais se notará esse desbalanceamento.
+
+Ainda tentamos utilizar o colapsamento dos dois ciclos aninhados, o que percorre
+os baldes e o interior que percorre o array dos elementos. Para manter a escrita
+no balde dos elementos em paralelo a atualização do indice de escrita no balde
+era feita de forma atómica. Nesta implementação, a escalabilidade do algoritmo
+provou-se bastante inferior, começando a diminuir a partir das 4 threads.
 
 TODO: INSERIR BENCHAMRKS
 
