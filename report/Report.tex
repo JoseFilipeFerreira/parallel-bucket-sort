@@ -109,7 +109,7 @@ balde. Com o objetivo de tentar resolver este problema tentamos duas abordagens
 distintas: a utilização de tarefas e a declaração da zona critica. Em ambas as
 opções obtivemos resultados piores quando comparados com a sua versão
 sequencial, pois tanto a gestão de zonas criticas como a gestão de tarefas é
-muito pesado.
+muito pesado, como visto nas duas primeiras colunas da tabela \ref{tab:Times} .
 
 Após analizar-mos estes resultados tentamos adaptar o algoritmo para um formato
 mais paralelizável através da remoção da zona critica. Nesta nova versão
@@ -127,13 +127,14 @@ elementos. Para manter a escrita no balde dos elementos em paralelo a
 atualização do índice de escrita no balde era feita de forma atómica. Nesta
 implementação, a escalabilidade do algoritmo provou-se bastante inferior,
 começando a diminuir a partir das 4 \textit{threads}, mantendo a tendência até
-às 32 \textit{threads}.
+às 32 \textit{threads}, como visto na ultima coluna da tabela \ref{tab:Times}.
 
 Para tentar tornar o algoritmo ainda mais escalável decidimos variar o numero
 de baldes. Numa primeira abordagem testamos com um número de baldes constante
 para vários números de \textit{threads}. Não encontramos nenhum valor que fosse
 o melhor para todos o número de \textit{threads}, mas vimos que quantas mais
-\textit{threads} utilizadas, mais benéfico era o maior número de baldes. 
+\textit{threads} utilizadas, mais benéfico era o maior número de baldes, visto
+na tabela \ref{tab:fix_size}.
 
 Perante esta relação tentamos testar com um valor de baldes dependente do número
 de \textit{threads} utilizadas. Aqui vimos que, regra geral, utilizar o dobro do
@@ -141,17 +142,19 @@ número de \textit{threads} garantia o maior resultado, mas tendo em conta as
 características do nosso algoritmo, nomeadamente, o facto de por cada balde é
 feita uma passagem pelo array de elementos a ordenar, a partir das 32
 \textit{threads} o aumento da carga de trabalho torna-se tal que o programa
-começa a ficar mais lento.
+começa a ficar mais lento, como visto na tabela \ref{tab:var_size}.
 
 Juntando a informação obtida em ambos os testes, implementamos um meio termo
 entre ambas as abordagens, utilizando o dobro do número de \textit{threads} para
 o número de baldes, e colocando um teto máximo de 32 baldes, valores para o qual
-obtivemos os melhores resultados médios até às 40 \textit{threads}.
+obtivemos os melhores resultados médios até às 40 \textit{threads}, visto na
+tabela \ref{tab:cutoff}.
 
 \appendix
 
 \chapter{Benchmarking}
-Tempos de execução, para 100000000 elementos aleatórios, entre -1000 e 50000
+\section{Tempos de execução, para 100000000 elementos aleatórios, entre -1000 e
+50000}
 \begin{table}[h]
 \centering
 \begin{tabular}{|l|l|l|l|l|}
@@ -211,8 +214,25 @@ Threads & 30       & 32       & 34       & 36       & 38       & 40       \\ \hl
 40      & 1.907169 & 1.799508 & 1.779662 & 1.718217 & 1.788759 & 1.881975 \\ \hline
 64      & 2.599405 & 2.536593 & 2.106488 & 1.911450 & 1.976940 & 1.977957 \\ \hline
 \end{tabular}
-\caption{\label{tab:var_size}Tempos de execução, com o número de baldes a ser o
+\caption{\label{tab:cutoff}Tempos de execução, com o número de baldes a ser o
     dobro do número de threads, e variando o número máximo de baldes
     utilizados.}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\multicolumn{1}{|c|}{Threads} & \multicolumn{1}{c|}{Time} & \multicolumn{1}{c|}{Speedup} \\ \hline
+Seq                           & 20,629999                 & 1                            \\ \hline
+2                             & 10,346263                 & 1,993956562                  \\ \hline
+4                             & 5,57325                   & 3,701610192                  \\ \hline
+8                             & 3,288632                  & 6,273124813                  \\ \hline
+16                            & 2,199246                  & 9,380487222                  \\ \hline
+32                            & 1,677771                  & 12,29607557                  \\ \hline
+64                            & 1,814721                  & 11,36813813                  \\ \hline
+\end{tabular}
+\caption{\label{tab:final}Tempos finais de execução e respetivo speedup, com a
+    versão sequencial a utilizar 4 baldes.}
 \end{table}
 \end{document}
