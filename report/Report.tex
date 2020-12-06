@@ -101,56 +101,57 @@ Fazendo uso da implementação sequencial descrita no capitulo anterior, começa
 a conversão para uma versão com um modelo de memoria partilhada fazendo uso de
 \textit{OpenMP}.
 
-Para a paralelização da primeira versão sequencial, começamos por tratar do
+De modo a paralelizar a primeira versão sequencial, começamos por tratar do
 ciclo mais longo que itera por todos os elementos do \textit{array}. Ao fazer
-uma analise mais detalhada deste, deparamo-nos com a existência de uma zona
-critica onde era escrito cada elemento no respetivo balde. Para tentar resolver
-o problema tentamos duas abordagens distintas, a utilização de tarefas e a
-declaração da zona critica. Em ambas as opções obtivemos resultados piores
-quando comparados com a sua versão sequencial, pois tanto a gestão de zonas
-criticas, bem como a gestão das tarefas são tarefas pesadas.
+uma analise mais detalhada do algoritmo reparamos na existência de uma zona
+critica. Esta zona critica ocorria quando era escrito cada elemento no respetivo
+balde. Com o objetivo de tentar resolver este problema tentamos duas abordagens
+distintas: a utilização de tarefas e a declaração da zona critica. Em ambas as
+opções obtivemos resultados piores quando comparados com a sua versão
+sequencial, pois tanto a gestão de zonas criticas como a gestão de tarefas é
+muito pesado.
 
-Vendo estes resultados, tentamos adaptar o algoritmo para um formato mais
-paralelizável, removendo a zona critica.
-
-Nesta nova versão verificamos que os tempos de execução paralelos estavam a
-baixar, obtendo speedups consideráveis até às 16 \textit{threads}. Embora o
-speedup esteja ligeiramente abaixo do ideal e se afastar do valor quanto maior o
-numero de \textit{threads}. Isto deve-se ao número de elementos por balde não
-ser uniforme e o tempo de execução só conseguir ser tão baixo quanto o balde
-mais lento de processar. Por isso, quanto maior o numero de \textit{threads} em
-trabalho mais se notará esse desequelibrio.
+Após analizar-mos estes resultados tentamos adaptar o algoritmo para um formato
+mais paralelizável através da remoção da zona critica. Nesta nova versão
+verificamos que os tempos de execução paralelos estavam a baixar, obtendo
+speedups consideráveis até às 16 \textit{threads}. Embora o speedup esteja
+ligeiramente abaixo do ideal e se afastar do valor quanto maior o numero de
+\textit{threads}. Isto deve-se ao número de elementos por balde não ser uniforme
+e o tempo de execução só conseguir ser tão baixo quanto o balde mais lento de
+processar. Por isso, quanto maior o numero de \textit{threads} em trabalho mais
+se notará esse desequilíbrio.
 
 Para tentar mitigar este problema tentamos utilizar o colapsamento dos dois
 ciclos aninhados, o que percorre os baldes e o interior que percorre o array dos
 elementos. Para manter a escrita no balde dos elementos em paralelo a
 atualização do índice de escrita no balde era feita de forma atómica. Nesta
 implementação, a escalabilidade do algoritmo provou-se bastante inferior,
-começando a diminuir a partir das 4 threads, mantendo a tendência até às 32
-threads.
+começando a diminuir a partir das 4 \textit{threads}, mantendo a tendência até
+às 32 \textit{threads}.
 
-Para tentar tornar o algoritmo ainda mais escalavel, tentamos variar o número de
-baldes que são utilizados para distribuir os elementos a ordenar. Numa primeira
-abordagem testamos com um mesmo número de baldes para vários números de threads.
-Não encontramos nenhum valor que fosse o melhor para todos o número de threads,
-mas vimos que quantas mais threads utilizadas, mais benéfico era o maior número
-de baldes. 
+Para tentar tornar o algoritmo ainda mais escalável decidimos variar o numero
+de baldes. Numa primeira abordagem testamos com um número de baldes constante
+para vários números de \textit{threads}. Não encontramos nenhum valor que fosse
+o melhor para todos o número de \textit{threads}, mas vimos que quantas mais
+\textit{threads} utilizadas, mais benéfico era o maior número de baldes. 
 
 Perante esta relação tentamos testar com um valor de baldes dependente do número
-de threads utilizadas. Aqui vimos que, regra geral, utilizar o dobro do número
-de threads garantia o maior resultado, mas tendo em conta as caracteristicas do
-nosso algoritmo, nomeadamente, o facto de por cada balde é feita uma passagem
-pelo array de elementos a ordenar, a partir das 32 threads o aumento da carga de
-trabalho torna-se tal que o programa começa a ficar mais lento.
+de \textit{threads} utilizadas. Aqui vimos que, regra geral, utilizar o dobro do
+número de \textit{threads} garantia o maior resultado, mas tendo em conta as
+características do nosso algoritmo, nomeadamente, o facto de por cada balde é
+feita uma passagem pelo array de elementos a ordenar, a partir das 32
+\textit{threads} o aumento da carga de trabalho torna-se tal que o programa
+começa a ficar mais lento.
 
 Juntando a informação obtida em ambos os testes, implementamos um meio termo
-entre ambas as abordagens, utilizando o dobro do número de threads para o número
-de baldes, e colocando um teto máximo de 32 baldes, valores para o qual obtivemos os melhores
-resultados médios até as 40 threads.
+entre ambas as abordagens, utilizando o dobro do número de \textit{threads} para
+o número de baldes, e colocando um teto máximo de 32 baldes, valores para o qual
+obtivemos os melhores resultados médios até às 40 \textit{threads}.
 
 \appendix
 
-\chapter{Tempos de execução, para 100000000 elementos aleatórios, entre -1000 e 50000}
+\chapter{Benchmarking}
+Tempos de execução, para 100000000 elementos aleatórios, entre -1000 e 50000
 \begin{table}[h]
 \centering
 \begin{tabular}{|l|l|l|l|l|}
