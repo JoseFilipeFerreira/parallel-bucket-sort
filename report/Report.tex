@@ -66,7 +66,9 @@ resultados de \textit{benchmarking} obtidos ao longo deste projeto.
 De notar que todos os benchmarks descritos foram efeutados em nós do tipo 652 do
 cluster \textit{SeARCH}, e todos os executáveis foram compilados com a versão
 7.2.0 do \textit{gcc}, com as flags \textit{-O3 -ftree-vectorize -fopenmp
--std=c11} para garantir a maior consistência entre os diferentes benchmarks.
+-std=c11} para garantir a maior consistência entre os diferentes benchmarks. Na
+ausência de indicação, os benchmarks foram efetuados com um input de 100000000
+de elementos aleatórios, entre -1000 e 500000.
 
 \chapter{Sequencial}
 O \textit{Bucket Sort} consiste em definir um conjunto de N "baldes"
@@ -109,7 +111,7 @@ balde. Com o objetivo de tentar resolver este problema tentamos duas abordagens
 distintas: a utilização de tarefas e a declaração da zona critica. Em ambas as
 opções obtivemos resultados piores quando comparados com a sua versão
 sequencial, pois tanto a gestão de zonas criticas como a gestão de tarefas é
-muito pesado, como visto nas duas primeiras colunas da tabela \ref{tab:Times} .
+muito pesado, como visto nas duas primeiras colunas da tabela \ref{tab:Times}.
 
 Após analizar-mos estes resultados tentamos adaptar o algoritmo para um formato
 mais paralelizável através da remoção da zona critica. Nesta nova versão
@@ -118,7 +120,9 @@ speedups consideráveis até às 16 \textit{threads}. Embora o speedup esteja
 ligeiramente abaixo do ideal e se afastar do valor quanto maior o numero de
 \textit{threads}. Isto deve-se ao número de elementos por balde não ser uniforme
 e o tempo de execução só conseguir ser tão baixo quanto o balde mais lento de
-processar. Por isso, quanto maior o numero de \textit{threads} em trabalho mais
+processar, como se pode ver na tabela \ref{tab:unbal}, onde com um desequilíbrio
+extremo quase não existe speedup. 
+Por isso, quanto maior o numero de \textit{threads} em trabalho mais
 se notará esse desequilíbrio.
 
 Para tentar mitigar este problema tentamos utilizar o colapsamento dos dois
@@ -135,6 +139,8 @@ para vários números de \textit{threads}. Não encontramos nenhum valor que fos
 o melhor para todos o número de \textit{threads}, mas vimos que quantas mais
 \textit{threads} utilizadas, mais benéfico era o maior número de baldes, visto
 na tabela \ref{tab:fix_size}.
+
+\pagebreak
 
 Perante esta relação tentamos testar com um valor de baldes dependente do número
 de \textit{threads} utilizadas. Aqui vimos que, regra geral, utilizar o dobro do
@@ -153,86 +159,101 @@ tabela \ref{tab:cutoff}.
 \appendix
 
 \chapter{Benchmarking}
-\section{Tempos de execução, para 100000000 elementos aleatórios, entre -1000 e
-50000}
 \begin{table}[h]
-\centering
-\begin{tabular}{|l|l|l|l|l|}
-\hline
-\multicolumn{5}{|c|}{Times}                                      \\ \hline
-Threads & Old Critical & Old Task    & New       & New Collapsed \\ \hline
-Seq     & 16,209999    & 16,209999   & 22,299999 & 22,299999     \\ \hline
-2       & 43,23        & 305,169983  & 11,403177 & 11,968859     \\ \hline
-4       & 100,150002   & 937,929993  & 6,880816  & 6,872915      \\ \hline
-8       & 187,929993   & 2227,460205 & 4,622566  & 5,965684      \\ \hline
-16      & 479,750031   & 5547,610352 & 2,362948  & 4,678829      \\ \hline
-32      & 1213,959961  & 12624,78906 & 2,363651  & 4,859851      \\ \hline
-64      & 1726,070068  & 11589,56934 & 2,449052  & 4,059251      \\ \hline
-\end{tabular}
-\caption{\label{tab:Times}Tempos de execução iniciais, com 10 baldes}
+    \centering
+    \begin{tabular}{|l|l|l|l|l|}
+        \hline
+        \multicolumn{5}{|c|}{Times}                                      \\ \hline
+        Threads & Old Critical & Old Task    & New       & New Collapsed \\ \hline
+        Seq     & 16,209999    & 16,209999   & 22,299999 & 22,299999     \\ \hline
+        2       & 43,23        & 305,169983  & 11,403177 & 11,968859     \\ \hline
+        4       & 100,150002   & 937,929993  & 6,880816  & 6,872915      \\ \hline
+        8       & 187,929993   & 2227,460205 & 4,622566  & 5,965684      \\ \hline
+        16      & 479,750031   & 5547,610352 & 2,362948  & 4,678829      \\ \hline
+        32      & 1213,959961  & 12624,78906 & 2,363651  & 4,859851      \\ \hline
+        64      & 1726,070068  & 11589,56934 & 2,449052  & 4,059251      \\ \hline
+    \end{tabular}
+    \caption{\label{tab:Times}Tempos de execução iniciais, com 10 baldes}
 \end{table}
 
 \begin{table}[h]
-\centering
-\begin{tabular}{|l|l|l|l|l|l|}
-\hline
-Threads & 5 buckets & 10 buckets & 20 buckets & 40 buckets & 80 bucket \\ \hline
-2       & 12.520761 & 11.218051  & 12.921473  & 17.016363  & 25.398283 \\ \hline
-4       & 8.365767  & 6.739361   & 6.511606   & 8.512317   & 12.743460 \\ \hline
-8       & 5.218658  & 4.984042   & 3.952061   & 4.323404   & 6.438317  \\ \hline
-16      & 5.344770  & 3.167999   & 3.042659   & 2.632886   & 3.465635  \\ \hline
-32      & 5.248249  & 3.147622   & 2.148584   & 2.392601   & 2.836905  \\ \hline
-64      & 5.270648  & 3.161402   & 2.366316   & 2.002006   & 3.260201  \\ \hline
-\end{tabular}
-\caption{\label{tab:fix_size}Tempos de execução, fazendo variar o
+    \centering
+    \begin{tabular}{|l|l|l|l|l|l|}
+        \hline
+        Threads & 5 buckets & 10 buckets & 20 buckets & 40 buckets & 80 bucket \\ \hline
+        2       & 12.520761 & 11.218051  & 12.921473  & 17.016363  & 25.398283 \\ \hline
+        4       & 8.365767  & 6.739361   & 6.511606   & 8.512317   & 12.743460 \\ \hline
+        8       & 5.218658  & 4.984042   & 3.952061   & 4.323404   & 6.438317  \\ \hline
+        16      & 5.344770  & 3.167999   & 3.042659   & 2.632886   & 3.465635  \\ \hline
+        32      & 5.248249  & 3.147622   & 2.148584   & 2.392601   & 2.836905  \\ \hline
+        64      & 5.270648  & 3.161402   & 2.366316   & 2.002006   & 3.260201  \\ \hline
+    \end{tabular}
+    \caption{\label{tab:fix_size}Tempos de execução, fazendo variar o
     número de baldes utilizados}
 \end{table}
 
-\begin{table}[h]
-\centering
-\begin{tabular}{|l|l|l|l|l|l|}
-\hline
-Threads & n\_threads & 2*n\_threads & 4*n\_threads & 8*n\_threads & 16*n\_threads \\ \hline
-2       & 11.395469  & 10.310162    & 10.808166    & 12.206050    & 15.356203     \\ \hline
-4       & 6.129920   & 5.490817     & 6.108120     & 7.681805     & 11.012663     \\ \hline
-8       & 3.719489   & 3.100843     & 3.883367     & 5.560686     & 9.027642      \\ \hline
-16      & 2.217584   & 2.001313     & 2.854720     & 4.599587     & 8.157944      \\ \hline
-32      & 1.824530   & 2.292776     & 3.511230     & 6.276313     & 11.743461     \\ \hline
-64      & 2.486487   & 3.223805     & 5.932982     & 10.554493    & 20.222078     \\ \hline
-\end{tabular}
-\caption{\label{tab:var_size}Tempos de execução, fazendo variar o
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{|l|l|l|l|l|l|}
+        \hline
+        Threads & n\_threads & 2*n\_threads & 4*n\_threads & 8*n\_threads & 16*n\_threads \\ \hline
+        2       & 11.395469  & 10.310162    & 10.808166    & 12.206050    & 15.356203     \\ \hline
+        4       & 6.129920   & 5.490817     & 6.108120     & 7.681805     & 11.012663     \\ \hline
+        8       & 3.719489   & 3.100843     & 3.883367     & 5.560686     & 9.027642      \\ \hline
+        16      & 2.217584   & 2.001313     & 2.854720     & 4.599587     & 8.157944      \\ \hline
+        32      & 1.824530   & 2.292776     & 3.511230     & 6.276313     & 11.743461     \\ \hline
+        64      & 2.486487   & 3.223805     & 5.932982     & 10.554493    & 20.222078     \\ \hline
+    \end{tabular}
+    \caption{\label{tab:var_size}Tempos de execução, fazendo variar o
     número de baldes, com base no número de threads.}
 \end{table}
 
 \begin{table}[h]
-\centering
-\begin{tabular}{|l|l|l|l|l|l|l|}
-\hline
-Threads & 30       & 32       & 34       & 36       & 38       & 40       \\ \hline
-16      & 2.085598 & 2.008397 &          &          &          &          \\ \hline
-32      & 1.846964 & 1.813501 & 2.572607 & 2.442342 & 2.408187 & 2.349852 \\ \hline
-40      & 1.907169 & 1.799508 & 1.779662 & 1.718217 & 1.788759 & 1.881975 \\ \hline
-64      & 2.599405 & 2.536593 & 2.106488 & 1.911450 & 1.976940 & 1.977957 \\ \hline
-\end{tabular}
-\caption{\label{tab:cutoff}Tempos de execução, com o número de baldes a ser o
+    \centering
+    \begin{tabular}{|l|l|l|l|l|l|l|}
+        \hline
+        Threads & 30       & 32       & 34       & 36       & 38       & 40       \\ \hline
+        16      & 2.085598 & 2.008397 &          &          &          &          \\ \hline
+        32      & 1.846964 & 1.813501 & 2.572607 & 2.442342 & 2.408187 & 2.349852 \\ \hline
+        40      & 1.907169 & 1.799508 & 1.779662 & 1.718217 & 1.788759 & 1.881975 \\ \hline
+        64      & 2.599405 & 2.536593 & 2.106488 & 1.911450 & 1.976940 & 1.977957 \\ \hline
+    \end{tabular}
+    \caption{\label{tab:cutoff}Tempos de execução, com o número de baldes a ser o
     dobro do número de threads, e variando o número máximo de baldes
     utilizados.}
 \end{table}
 
 \begin{table}[h]
-\centering
-\begin{tabular}{|l|l|l|}
-\hline
-\multicolumn{1}{|c|}{Threads} & \multicolumn{1}{c|}{Time} & \multicolumn{1}{c|}{Speedup} \\ \hline
-Seq                           & 20,629999                 & 1                            \\ \hline
-2                             & 10,346263                 & 1,993956562                  \\ \hline
-4                             & 5,57325                   & 3,701610192                  \\ \hline
-8                             & 3,288632                  & 6,273124813                  \\ \hline
-16                            & 2,199246                  & 9,380487222                  \\ \hline
-32                            & 1,677771                  & 12,29607557                  \\ \hline
-64                            & 1,814721                  & 11,36813813                  \\ \hline
-\end{tabular}
-\caption{\label{tab:final}Tempos finais de execução e respetivo speedup, com a
+    \centering
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \multicolumn{1}{|c|}{Threads} & \multicolumn{1}{c|}{Time} & \multicolumn{1}{c|}{Speedup} \\ \hline
+        Seq                           & 20,629999                 & 1                            \\ \hline
+        2                             & 10,346263                 & 1,993956562                  \\ \hline
+        4                             & 5,57325                   & 3,701610192                  \\ \hline
+        8                             & 3,288632                  & 6,273124813                  \\ \hline
+        16                            & 2,199246                  & 9,380487222                  \\ \hline
+        32                            & 1,677771                  & 12,29607557                  \\ \hline
+        64                            & 1,814721                  & 11,36813813                  \\ \hline
+    \end{tabular}
+    \caption{\label{tab:final}Tempos finais de execução e respetivo speedup, com a
     versão sequencial a utilizar 4 baldes.}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \multicolumn{1}{|c|}{Threads} & \multicolumn{1}{c|}{Time} & \multicolumn{1}{c|}{Speedup} \\ \hline
+        Seq                           & 1,57                      & 1                            \\ \hline
+        2                             & 1,485135                  & 1,057142953                  \\ \hline
+        4                             & 1,49086                   & 1,053083455                  \\ \hline
+        8                             & 1,498286                  & 1,047864026                  \\ \hline
+        16                            & 1,504521                  & 1,043521493                  \\ \hline
+        32                            & 1,45915                   & 1,075968886                  \\ \hline
+        64                            & 1,456144                  & 1,078190069                  \\ \hline
+    \end{tabular}
+    \caption{\label{tab:unbal}Tempos de execução para 10000000 elementos aleatórios entre -100 e 100,
+    com um elemento sendo 500000}
 \end{table}
 \end{document}
