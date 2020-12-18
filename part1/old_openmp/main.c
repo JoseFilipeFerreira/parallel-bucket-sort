@@ -1,17 +1,16 @@
 #include <unistd.h>
-#include <omp.h>
+#include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <omp.h>
 
-int N_BUCKETS; 
+#define N_BUCKETS 10
 
 struct Bucket {
     int* array;
     size_t n_elem;
     size_t max_elem;
 };
-
 
 struct Bucket* make(size_t max){
     struct Bucket* block_arr = malloc(sizeof(struct Bucket));
@@ -27,13 +26,27 @@ void free_bucket(struct Bucket* b){
     free(b);
 }
 
-__inline__
-void buckets_to_arr(size_t size, struct Bucket* arr, int* res) {
-    memcpy(res, arr->array, arr->n_elem * sizeof(int));
+//This could write in res with no limits
+void buckets_to_arr(size_t size, struct Bucket* arr[size], int* res) {
+    size_t w = 0;
+    for(size_t bucket = 0; bucket < size; bucket++) {
+        #ifdef NDEBUG
+        printf("%zu: ", arr[bucket]->n_elem);
+        #endif
+        for(size_t elem = 0; elem < arr[bucket]->n_elem; elem++) {
+            res[w++] = arr[bucket]->array[elem];
+            #ifdef NDEBUG
+            printf("%d ", arr[bucket]->array[elem]);
+            #endif
+        }
+        #ifdef NDEBUG
+        printf("\n");
+        #endif
+    }
 }
 
 void insert(struct Bucket* arr, int elem){
-    if(arr->n_elem >= arr->max_elem){ 
+    if(arr->n_elem >= arr->max_elem){
         arr->array = realloc(arr->array, sizeof(int) * arr->max_elem * 2);
         arr->max_elem *= 2;
     }
@@ -54,41 +67,47 @@ void bucket_sort(size_t size, int* arr){
 
     int max = arr[0];
     int min = arr[0];
-    for(size_t i = 1; i < size; i++) { //vectorized
+    for(size_t i = 1; i < size; i++) {
         if(arr[i] > max) max = arr[i];
         if(arr[i] < min) min = arr[i];
     }
 
-#ifdef NDEBUG
-    fprintf(stderr, "max: %d, min: %d\n", max, min);
-#endif
+    #ifdef NDEBUG
+    printf("max: %d, min: %d\n", max, min);
+    #endif
 
     struct Bucket* buckets[N_BUCKETS];
+#pragma omp parallel 
+    {
+#pragma omp for
     for (size_t i = 0; i < N_BUCKETS; i++)
         buckets[i] = make(size);
-    {
-        for (size_t i = 0; i < N_BUCKETS; i++) {
-            for (size_t j = 0; j < size; j++){
-                size_t n_bucket = (arr[j] + abs(min)) * N_BUCKETS / (abs(max + abs(min)));
-                n_bucket = n_bucket >= N_BUCKETS ? N_BUCKETS - 1 : n_bucket;
-                if(n_bucket == i) {
-#ifdef NDEBUG
-                    fprintf(stderr, "%zu<- %d\n", i, arr[j]);
-#endif
-                    buckets[i]->array[buckets[i]->n_elem] = arr[j];
-                    buckets[i]->n_elem++;
-                }
-            }
-            qsort(buckets[i]->array, buckets[i]->n_elem, sizeof(int), cmpfunc);
-        }
 
-        size_t i = 0, j;
-        for(j = 0; j < N_BUCKETS; j++) {
-            memcpy(arr + i, buckets[j]->array, buckets[j]->n_elem * sizeof(int));
-            i += buckets[j]->n_elem;
-            free_bucket(buckets[j]);
-        }
+#pragma omp for
+    for (size_t i = 0; i < size; i++){
+        size_t n_bucket = (arr[i] + abs(min)) * N_BUCKETS / (abs(max + abs(min)));
+        n_bucket = n_bucket >= N_BUCKETS ? N_BUCKETS - 1 : n_bucket;
+
+        #ifdef NDEBUG
+        printf("%zu<- %d\n", n_bucket, arr[i]);
+        #endif
+
+#pragma omp critical
+        insert(buckets[n_bucket], arr[i]);
     }
+#pragma omp for
+    for (size_t i = 0; i < N_BUCKETS; i++)
+        if (buckets[i]->n_elem > 1)
+            qsort(buckets[i]->array, buckets[i]->n_elem, sizeof(int), cmpfunc);
+
+#pragma omp single
+    buckets_to_arr(N_BUCKETS, buckets, arr);
+
+#pragma omp for
+    for (size_t i = 0; i < N_BUCKETS; i++)
+        free_bucket(buckets[i]);
+    }
+
 }
 
 void print_arr(int* arr, size_t size){
@@ -100,7 +119,6 @@ void print_arr(int* arr, size_t size){
 
 
 int main(int argc, char** argv){
-    N_BUCKETS = 4; 
     struct Bucket* b = make(100);
 
     FILE* file = fopen (argv[1], "r");
@@ -112,10 +130,9 @@ int main(int argc, char** argv){
 
     size_t size = b->n_elem;
 
-#ifdef NDEBUG
+    #ifdef NDEBUG
     print_arr(b->array, size);
-#endif
-
+    #endif
 #include <time.h>
     clock_t start = clock();
     bucket_sort(size, b->array);

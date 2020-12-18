@@ -66,7 +66,9 @@ void bucket_sort(size_t size, int* arr){
     struct Bucket* buckets[N_BUCKETS];
     for (size_t i = 0; i < N_BUCKETS; i++)
         buckets[i] = make(size);
+#pragma omp parallel
     {
+#pragma omp for 
         for (size_t i = 0; i < N_BUCKETS; i++) {
             for (size_t j = 0; j < size; j++){
                 size_t n_bucket = (arr[j] + abs(min)) * N_BUCKETS / (abs(max + abs(min)));
@@ -75,15 +77,15 @@ void bucket_sort(size_t size, int* arr){
 #ifdef NDEBUG
                     fprintf(stderr, "%zu<- %d\n", i, arr[j]);
 #endif
-                    buckets[i]->array[buckets[i]->n_elem] = arr[j];
-                    buckets[i]->n_elem++;
+                    buckets[i]->array[buckets[i]->n_elem++] = arr[j];
                 }
             }
-            qsort(buckets[i]->array, buckets[i]->n_elem, sizeof(int), cmpfunc);
         }
 
         size_t i = 0, j;
+#pragma omp for 
         for(j = 0; j < N_BUCKETS; j++) {
+            qsort(buckets[j]->array, buckets[j]->n_elem, sizeof(int), cmpfunc);
             memcpy(arr + i, buckets[j]->array, buckets[j]->n_elem * sizeof(int));
             i += buckets[j]->n_elem;
             free_bucket(buckets[j]);
@@ -100,7 +102,7 @@ void print_arr(int* arr, size_t size){
 
 
 int main(int argc, char** argv){
-    N_BUCKETS = 4; 
+    N_BUCKETS =  10; 
     struct Bucket* b = make(100);
 
     FILE* file = fopen (argv[1], "r");
@@ -116,11 +118,9 @@ int main(int argc, char** argv){
     print_arr(b->array, size);
 #endif
 
-#include <time.h>
-    clock_t start = clock();
+    double time = omp_get_wtime(); 
     bucket_sort(size, b->array);
-    start = clock() - start;
-    fprintf(stderr, "%f\n", ((float)start)/CLOCKS_PER_SEC);
+    fprintf(stderr, "Time=%f\n", omp_get_wtime()-time); 
 
     print_arr(b->array, size);
 

@@ -2,13 +2,13 @@ CC= gcc
 
 RANDOM= generate
 RANDOM_FILE= random.txt
-EXEC= bucket_seq
+EXEC= ../bin/bucket_omp_task
 
 $(EXEC): main.c
-	$(CC) main.c -o $(EXEC) -std=c11 -O3 -ftree-vectorize
+	$(CC) main.c -o $(EXEC) -std=c11 -O3 -ftree-vectorize -fopenmp
 
 debug: main.c
-	$(CC) -DNDEBUG -g main.c -o $(EXEC) -std=c11 -O3 -ftree-vectorize
+	$(CC) -DNDEBUG -g main.c -o $(EXEC) -std=c11 -O3 -ftree-vectorize -fopenmp
 
 
 grind: $(EXEC) $(RANDOM_FILE)

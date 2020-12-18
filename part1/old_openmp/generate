@@ -2,7 +2,7 @@
 import sys
 import random
 
-if len(sys.argv) != 4:
+if len(sys.argv) == 4:
     print("USAGE: generate MIN MAX AMOUNT OUTPUT_FILE")
 
 with open(sys.argv[4], "w+") as f:
