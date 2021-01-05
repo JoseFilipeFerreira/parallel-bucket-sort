@@ -62,9 +62,21 @@ int cmpfunc (const void * a, const void * b) {
     return ( *(int*)a - *(int*)b );
 }
 
+struct Bucket* read_from_file(char* fname) {
+    //Read data
+    struct Bucket* b = make(100);
+    FILE* file = fopen (fname, "r");
+    int v;
+    while (!feof (file)){
+        fscanf (file, "%d\n", &v);
+        insert(b, v);
+    }
+    return b;
+}
+
 int main( int argc, char *argv[]) { 
     int nrank, rank, msg;
-    //[Min, Max, Buffer_Size
+    //[Min, Max, Buffer_Size]
     int stats[3];
     MPI_Status status; 
 
@@ -74,24 +86,19 @@ int main( int argc, char *argv[]) {
     struct Bucket* b = NULL;
     struct Bucket* buckets[N_BUCKETS];
 
-    if (rank == 0) { 
-        //Read data
-        b = make(100);
-        FILE* file = fopen (argv[1], "r");
-        int v;
-        while (!feof (file)){
-            fscanf (file, "%d\n", &v);
-            insert(b, v);
-        }
+    if (!rank) { 
+        b = read_from_file(argv[1]);
+        //Calculate the max number of elements sent to each process
         stats[BUF] = 1 + b->n_elem / (nrank - 1);
-        stats[MAX] = stats[MIN] = b->array[0];
-
+        
         //Calculate Max and min
+        stats[MAX] = stats[MIN] = b->array[0];
         for(size_t i = 1; i < b->n_elem; i++) {
             if(b->array[i] > stats[MAX]) stats[MAX] = b->array[i];
             if(b->array[i] < stats[MIN]) stats[MIN] = b->array[i];
         }
     } 
+
     //Broadcast Min, max and max buffer size
     MPI_Bcast(&stats, 3, MPI_INT, 0, MPI_COMM_WORLD);
     if(!rank) {
@@ -113,64 +120,89 @@ int main( int argc, char *argv[]) {
         //Recive elems
         int buffer[stats[BUF]];
         int real_size;
+        fprintf(stderr, "Recive buckets in %d\n", rank);
         MPI_Recv(buffer, stats[BUF], MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         //Calculate the real number of elems recived
         MPI_Get_count(&status, MPI_INT, &real_size);
         //Build buckets
         build_buckets(buffer, real_size, buckets, stats);
-        //Send buckets to root
-        for(size_t i = 0; i < N_BUCKETS; i++) {
-            MPI_Send(buckets[i]->array, buckets[i]->n_elem, MPI_INT, 0, i, MPI_COMM_WORLD);
+        //Send buckets to correct process
+        int curr_buck = 0;
+        for (size_t p = 1; p < nrank; p++) {
+            int n_buckets = (nrank - 1) >= N_BUCKETS ? 1 : (N_BUCKETS / (nrank - 1));
+            n_buckets += p <= N_BUCKETS % (nrank - 1) ? 1 : 0;
+            for(size_t i = 0; i < n_buckets; i++) {
+                fprintf(stderr, "Send bucket %d from %d to %zu\n", curr_buck, rank, p);
+                MPI_Send(buckets[curr_buck]->array, buckets[curr_buck]->n_elem, MPI_INT, p, curr_buck, MPI_COMM_WORLD);
+                curr_buck++;
+            }
+        }
+        //Process a bucket if applicable
+        if(rank <= N_BUCKETS) {
+            //Determine buckets that it will recive
+            int mod = N_BUCKETS % (nrank - 1);
+            int n_buckets = (nrank - 1) >= N_BUCKETS ? 1 : (N_BUCKETS / (nrank - 1));
+            n_buckets += rank <= mod ? 1 : 0;
+            //Offset to properly convert min_bucket to max_bucket into 0 to n_bucket
+            int offset = rank <= mod ? rank - 1 : mod;
+            fprintf(stderr, "%d %d will recive %d buckets\n", offset, rank, n_buckets);
+            //Make them
+            for (size_t i = 0; i < n_buckets; i++)
+                buckets[i] = make(stats[BUF]);
+            int total_recived = 0;
+            for(size_t i = 0; i < n_buckets * (nrank - 1); i++) {
+                //Recive them
+                MPI_Recv(buffer, stats[BUF], MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                fprintf(stderr, "Recive %d from %d in %d\n", status.MPI_TAG, status.MPI_SOURCE, rank);
+                int real_size;
+                MPI_Get_count(&status, MPI_INT, &real_size);
+                int buck = (status.MPI_TAG - offset) % n_buckets;
+                //Save the recived bucket
+                memcpy(buckets[buck]->array + buckets[buck]->n_elem, buffer, real_size * sizeof(int));
+                buckets[buck]->n_elem += real_size;
+                total_recived += real_size;
+            }
+            //Sort Buckets
+            for (size_t i = 0; i < n_buckets; i++)
+            {
+                printf("-----Bucket %zu in %d rank-----\n", i, rank);
+                print_arr(buckets[i]->array, buckets[i]->n_elem);
+                fprintf(stderr, "Sort %zu in %d\n", i, rank);
+                if (buckets[i]->n_elem > 1)
+                    qsort(buckets[i]->array, buckets[i]->n_elem, sizeof(int), cmpfunc);
+            }
+            //Join Array
+            b = make(total_recived);
+            for(size_t j = 0; j < n_buckets; j++) {
+                fprintf(stderr, "Join %zu in %d\n", j, rank);
+                memcpy(b->array + b->n_elem, buckets[j]->array, buckets[j]->n_elem * sizeof(int));
+                b->n_elem += buckets[j]->n_elem;
+            }
+            fprintf(stderr, "Send final array%d\n", rank);
+            //Send the sorted and joined array to master
+            MPI_Send(b->array, b->n_elem, MPI_INT, 0, 0, MPI_COMM_WORLD);
+            fprintf(stderr, "Sent final array%d\n", rank);
         }
     }
-    //Join Buckets
     if(!rank) {
-        for (size_t i = 0; i < N_BUCKETS; i++)
-            buckets[i] = make(b->n_elem);
-        int buffer[stats[BUF]];
-        for(size_t i = 0; i < (nrank-1) * N_BUCKETS; i++) {
-            MPI_Recv(buffer, stats[BUF], MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-            int real_size;
+        int max_size = b->n_elem;
+        b->n_elem = 0;
+        //Gather sorted results
+        for(int i = 1; i < nrank; i++) {
+            int buffer[max_size], real_size;
+            MPI_Recv(buffer, max_size, MPI_INT, i, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             MPI_Get_count(&status, MPI_INT, &real_size);
-            memcpy(buckets[status.MPI_TAG]->array + buckets[status.MPI_TAG]->n_elem, buffer, real_size * sizeof(int));
-            buckets[status.MPI_TAG]->n_elem += real_size;
+            for(int z = 0; z < real_size; printf("%d ", buffer[z++]));
+            printf("\n");
+            fprintf(stderr, "Recive %d from %d\n", real_size, status.MPI_SOURCE);
+            memcpy(b->array + b->n_elem, buffer, real_size * sizeof(int));
+            b->n_elem += real_size;
         }
-        //Sort Buckets
-        for (size_t i = 0; i < N_BUCKETS; i++)
-        {
-            if (buckets[i]->n_elem > 1)
-                qsort(buckets[i]->array, buckets[i]->n_elem, sizeof(int), cmpfunc);
-        }
-
-        //Join Array
-        size_t i = 0, j;
-        for(j = 0; j < N_BUCKETS; j++) {
-            memcpy(b->array + i, buckets[j]->array, buckets[j]->n_elem * sizeof(int));
-            i += buckets[j]->n_elem;
-        }
-
+        //Print them
         print_arr(b->array, b->n_elem);
     }
 
-    /*
-    //Scatter doesn't give the mpi stat param, this meaning we cant know the size of the message
-    MPI_Scatter(b->array, b->n_elem, MPI_INT, &buffer, stats[BUF], MPI_INT, 0, MPI_COMM_WORLD);
-    //Build buckets
-    MPI_Gather(buffer, stats[BUF], MPI_INT, &b->array, stats[BUF], MPI_INT, 0, MPI_COMM_WORLD);
-    else if (rank == nrank - 1) { 
-//Join buckets
-MPI_Recv( &msg, 1, MPI_INT, rank-1, 0, MPI_COMM_WORLD, &status ); 
-printf( "Received on %d: %d\n", rank, msg); 
-} 
-else { 
-    //Build results
-    MPI_Recv( &msg, 1, MPI_INT, rank-1, 0, MPI_COMM_WORLD, &status ); 
-    printf( "Received on %d: %d\n", rank, msg); 
-    MPI_Send( &msg, msg, MPI_INT, rank+1, 0, MPI_COMM_WORLD); 
-    } 
-    */
+    MPI_Finalize(); 
 
-MPI_Finalize(); 
-
-return 0; 
+    return 0; 
 } 
