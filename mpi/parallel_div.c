@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define N_BUCKETS 10
+#define N_BUCKETS 2
 
 //TODO: This isnt very nice for when buck < procs
 //TODO: Fix mem allocation
@@ -80,7 +80,9 @@ int main( int argc, char *argv[]) {
     int nrank, rank, msg;
     //[Min, Max, Buffer_Size]
     int stats[3];
+    double start_time;
     MPI_Status status; 
+    MPI_Request req;
 
     MPI_Init(&argc, &argv); 
     MPI_Comm_rank( MPI_COMM_WORLD, &rank ); 
@@ -90,6 +92,7 @@ int main( int argc, char *argv[]) {
 
     if (!rank) { 
         b = read_from_file(argv[1]);
+        start_time = MPI_Wtime();
         //Calculate the max number of elements sent to each process
         stats[BUF] = 1 + b->n_elem / nrank;
 
@@ -115,11 +118,12 @@ int main( int argc, char *argv[]) {
             //Send work to each processes
             //This could be done with Scatter_v, but it doesnt give us the status from
             //the communication
-            MPI_Send(b->array + send_position, send_quantity, MPI_INT, i, 0, MPI_COMM_WORLD);
+            fprintf(stderr, "Send chunks to %zu\n", i);
+            MPI_Isend(b->array + send_position, send_quantity, MPI_INT, i, 0, MPI_COMM_WORLD, &req);
         }
     }
     //Recive elems
-    int buffer[stats[BUF]];
+    int* buffer = malloc(sizeof(int) * stats[BUF]);
     int real_size;
     fprintf(stderr, "Recive buckets in %d\n", rank);
     MPI_Recv(buffer, stats[BUF], MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
@@ -135,7 +139,7 @@ int main( int argc, char *argv[]) {
         n_buckets += mod && p < mod ? 1 : 0;
         for(size_t i = 0; i < n_buckets; i++) {
             fprintf(stderr, "Send bucket %d from %d to %zu\n", curr_buck, rank, p);
-            MPI_Send(buckets[curr_buck]->array, buckets[curr_buck]->n_elem, MPI_INT, p, curr_buck, MPI_COMM_WORLD);
+            MPI_Isend(buckets[curr_buck]->array, buckets[curr_buck]->n_elem, MPI_INT, p, curr_buck, MPI_COMM_WORLD, &req);
             curr_buck++;
         }
     }
@@ -167,9 +171,9 @@ int main( int argc, char *argv[]) {
         //Sort Buckets
         for (size_t i = 0; i < n_buckets; i++)
         {
-            printf("-----Bucket %zu in %d rank-----\n", i, rank);
-            print_arr(buckets[i]->array, buckets[i]->n_elem);
-            printf("----------\n");
+            //printf("-----Bucket %zu in %d rank-----\n", i, rank);
+            //print_arr(buckets[i]->array, buckets[i]->n_elem);
+            //printf("----------\n");
             fprintf(stderr, "Sort %zu in %d\n", i, rank);
             if (buckets[i]->n_elem > 1)
                 qsort(buckets[i]->array, buckets[i]->n_elem, sizeof(int), cmpfunc);
@@ -190,8 +194,9 @@ int main( int argc, char *argv[]) {
         int max_size = b->n_elem;
         b->n_elem = 0;
         //Gather sorted results
+        int* buffer = malloc(sizeof(int) * max_size);
         for(int i = 0; i < nrank; i++) {
-            int buffer[max_size], real_size;
+            int real_size;
             MPI_Recv(buffer, max_size, MPI_INT, i, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             MPI_Get_count(&status, MPI_INT, &real_size);
             for(int z = 0; z < real_size; printf("%d ", buffer[z++]));
@@ -201,6 +206,7 @@ int main( int argc, char *argv[]) {
             b->n_elem += real_size;
         }
         //Print them
+        fprintf(stderr, "Time: %f\n", (MPI_Wtime() - start_time) / 1000);
         printf("------------\n");
         printf("------------\n");
         print_arr(b->array, b->n_elem);
@@ -209,6 +215,5 @@ int main( int argc, char *argv[]) {
     }
 
     MPI_Finalize(); 
-
     return 0; 
 } 
