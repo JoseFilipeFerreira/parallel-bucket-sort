@@ -70,7 +70,7 @@ void balanced_bucket_send(const buckets* b, const size_t proc_units, const int r
         }
     }
 }
-    
+
 int main(int argc, char** argv) {
     int rank, size_rank;
     int n_buckets = 10;
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
         buf = dyn_arr_from_file(argv[1]);
         int max_chunk_size;
         //Build chunks to send to each process
-         chunks = dyn_arr_chunks(&buf, size_rank, &max_chunk_size);
+        chunks = dyn_arr_chunks(&buf, size_rank, &max_chunk_size);
         //Calc min and max of the array
         stats = stats_new(buf.array[0], buf.array[0], max_chunk_size, buf.len);
         for(size_t i = 0; i < buf.len; i++)

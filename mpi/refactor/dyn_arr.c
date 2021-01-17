@@ -75,18 +75,18 @@ int* dyn_arr_get(const dyn_arr* arr, const int index) {
 }
 
 dyn_arr* dyn_arr_chunks(const dyn_arr* arr, int n_chunks, int* max_chunk_size) {
-        int base_chunk = arr->len / n_chunks;
-        int reminder = arr->len % n_chunks;
-        *max_chunk_size = base_chunk;
-        *max_chunk_size += reminder ? 1 : 0;
-        dyn_arr* r = malloc(sizeof(dyn_arr) * n_chunks);
-        for(size_t i = 0, curr_pos = 0; i < n_chunks; i++) {
-            int chunk_size = base_chunk + (reminder-- > 0 ? 1 : 0);
-            int read_position = curr_pos;
-            curr_pos += chunk_size;
-            r[i] = dyn_arr_new_with_arr(arr->array + read_position, chunk_size, chunk_size);
-        }
-        return r;
+    int base_chunk = arr->len / n_chunks;
+    int reminder = arr->len % n_chunks;
+    *max_chunk_size = base_chunk;
+    *max_chunk_size += reminder ? 1 : 0;
+    dyn_arr* r = malloc(sizeof(dyn_arr) * n_chunks);
+    for(size_t i = 0, curr_pos = 0; i < n_chunks; i++) {
+        int chunk_size = base_chunk + (reminder-- > 0 ? 1 : 0);
+        int read_position = curr_pos;
+        curr_pos += chunk_size;
+        r[i] = dyn_arr_new_with_arr(arr->array + read_position, chunk_size, chunk_size);
+    }
+    return r;
 }
 
 void dyn_arr_append(dyn_arr* old, const dyn_arr new) {
