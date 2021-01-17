@@ -24,7 +24,7 @@ void dyn_arr_init(dyn_arr* r, const int size) {
 
 dyn_arr dyn_arr_new_with_arr(const int* arr, const int size, const int capacity) {
     dyn_arr r;
-    r.array = malloc(sizeof(int) * capacity);
+    r.array = malloc(sizeof(int) * capacity + size);
     memcpy(r.array, arr, sizeof(int) * size);
     r.len = size;
     r.capacity = capacity;
@@ -33,7 +33,7 @@ dyn_arr dyn_arr_new_with_arr(const int* arr, const int size, const int capacity)
 
 void dyn_arr_push(dyn_arr* arr, const int elem) {
     if(arr->capacity == arr->len) {
-        arr->array = reallocarray(arr->array, sizeof(int), 2*arr->capacity);
+        arr->array = realloc(arr->array, 2*arr->capacity * sizeof(int));
         arr->capacity *= 2;
     }
     arr->array[arr->len++] = elem;
@@ -90,13 +90,17 @@ dyn_arr* dyn_arr_chunks(const dyn_arr* arr, int n_chunks, int* max_chunk_size) {
 }
 
 void dyn_arr_append(dyn_arr* old, const dyn_arr new) {
-    old->array = realloc(old->array, old->capacity + new.len);
-    memcpy(old->array + old->len, new.array, new.len);
+    old->array = realloc(old->array, (old->capacity + new.len) * sizeof(int));
+    memcpy(old->array + old->len, new.array, new.len * sizeof(int));
+    old->len += new.len;
+    old->capacity += new.len;
 }
 
 void dyn_arr_append_arr(dyn_arr* old, const int* new, const int size) {
-    old->array = realloc(old->array, old->capacity + size);
-    memcpy(old->array + old->len, new, size);
+    old->array = realloc(old->array, (old->capacity + size) * sizeof(int));
+    memcpy(old->array + old->len, new, size * sizeof(int));
+    old->len += size;
+    old->capacity += size;
 }
 
 void dyn_arr_sort(dyn_arr* arr) {
