@@ -3,21 +3,27 @@
 #include<unistd.h>
 #include "buckets.h"
 
-#define DBG(X) fprintf(stderr, "%d: dbg %d\n", X);
-
 void send_dyn_arr(const dyn_arr* arr, const int dest, const int tag) {
     MPI_Request r;
+#ifdef NDEBUG
     fprintf(stderr, "%d: Send Chunk to %d with %d elems\n", getpid(), dest, arr->len);
+#endif
     MPI_Isend(arr->array, arr->len, MPI_INT, dest, tag, MPI_COMM_WORLD, &r);
+#ifdef NDEBUG
     fprintf(stderr, "%d: Sent\n", getpid());
+#endif
 }
 
 dyn_arr recive_dyn_arr(const int source, const int tag, const size_t size, MPI_Status* status) {
     dyn_arr r = dyn_arr_new(size);
+#ifdef NDEBUG
     fprintf(stderr, "%d: Start Recv Chunk with %zu elems\n", getpid(), size);
+#endif
     MPI_Recv(r.array, size, MPI_INT, source, tag, MPI_COMM_WORLD, status);
     MPI_Get_count(status, MPI_INT, &r.len);
+#ifdef NDEBUG
     fprintf(stderr, "%d: Recv chunk %d\n", getpid(), r.len);
+#endif
     return r;
 }
 
@@ -35,7 +41,9 @@ buckets balanced_bucket_recv(const size_t n_buckets, const size_t size, const si
         MPI_Get_count(&status, MPI_INT, &s);
         if(s) {
             int buck = (status.MPI_TAG - offset) % recv_buckets;
+#ifdef NDEBUG
             fprintf(stderr, "%d: Recv Buck %d from %d with %d elems saved in buck %d\n", getpid(), status.MPI_TAG, status.MPI_SOURCE, s, buck);
+#endif
             bucket_append(&r, buck, buffer, s);
         }
     }
@@ -51,10 +59,14 @@ void balanced_bucket_send(const buckets* b, const size_t proc_units, const int r
         send_buckets += mod && p < mod ? 1 : 0;
         for(size_t i = 0; i < send_buckets; i++) {
             bucket* tmp = buckets_get(b, last_bucket);
+#ifdef NDEBUG
             fprintf(stderr, "%d: Send Buck %d to %zu with %d elems\n", getpid(), last_bucket, p, tmp->len);
+#endif
             MPI_Isend(tmp->array, tmp->len, MPI_INT, p, last_bucket, MPI_COMM_WORLD, &r);
             last_bucket++;
+#ifdef NDEBUG
             fprintf(stderr, "%d: --Send Buck %d to %zu with %d elems\n", getpid(), last_bucket, p, tmp->len);
+#endif
         }
     }
 }
@@ -69,7 +81,9 @@ int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size_rank);
+#ifdef NDEBUG
     fprintf(stderr, "rank %d -> pid %d\n", rank, getpid());
+#endif
 
     if(rank == 0) {
         //Load elems to array
@@ -82,12 +96,16 @@ int main(int argc, char** argv) {
         for(size_t i = 0; i < buf.len; i++)
             stats_update_min_max(&stats, *dyn_arr_get(&buf, i));
     }
+#ifdef NDEBUG
     fprintf(stderr, "%d: Stats start\n", getpid());
+#endif
     int* tmp_stats = !rank ? stats_as_arr(&stats) : malloc(sizeof(int) * 4);
     MPI_Bcast(tmp_stats, 4, MPI_INT, 0, MPI_COMM_WORLD);
     stats = stats_from_arr(tmp_stats);
     stats_print(&stats, stderr);
+#ifdef NDEBUG
     fprintf(stderr, "%d: Stats end\n", getpid());
+#endif
     if(!rank) {
         //Send chunks to each process
         for(size_t i = 0; i < size_rank; i++) {
@@ -98,14 +116,22 @@ int main(int argc, char** argv) {
     //Recive chunk to process
     dyn_arr to_process = recive_dyn_arr(0, MPI_ANY_TAG, stats.buf_size, &status);
     //Build buckets
+#ifdef NDEBUG
     fprintf(stderr, "%d: Build buckets\n", getpid());
+#endif
     buckets b = buckets_from_dyn_arr(&to_process, n_buckets, &stats);
+#ifdef NDEBUG
     fprintf(stderr, "%d: --Build buckets\n", getpid());
+#endif
     //Send Buckets to proper place
+#ifdef NDEBUG
     fprintf(stderr, "%d: Send buckets\n", getpid());
+#endif
     int proc_units = size_rank > n_buckets ? n_buckets : size_rank;
     balanced_bucket_send(&b, proc_units, 0);
+#ifdef NDEBUG
     fprintf(stderr, "%d: --Send buckets\n", getpid());
+#endif
     if(rank < proc_units) {
         //Recv buckets
         buckets r = balanced_bucket_recv(n_buckets, stats.buf_size, proc_units, rank, size_rank, 0);
