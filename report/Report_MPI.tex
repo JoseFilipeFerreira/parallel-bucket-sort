@@ -54,16 +54,17 @@ linkcolor=black}
 O algoritmo escolhido para o projeto da unidade curricular de Computação
 Paralela e Distribuída foi o \textit{Bucket Sort}.
 
-Inicialmente desenvolvemos uma versão sequencial do projeto e procedemos ao
-\textit{benchmarking} do programa resultante. Em seguida convertemos a
-implementação sequencial numa versão com utilização de memoria partilhada
-fazendo uso de \textit{OpenMP} e comparamos o resultado com a versão sequencial
-desenvolvida anteriormente.
+Numa primeira fase do trabalho desenvolvemos uma versão sequencial do projeto e
+procedemos ao \textit{benchmarking} do programa resultante. Em seguida
+convertemos a implementação sequencial numa versão com utilização de memoria
+partilhada fazendo uso de \textit{OpenMP} e comparamos o resultado com a versão
+sequencial desenvolvida anteriormente.
 
-Ao longo deste relatório iremos descrever a metodologia utilizada e os
-resultados de \textit{benchmarking} obtidos ao longo deste projeto.
+Nesta segunda fase desenvolvemos uma nova versao do \textit{bucket sort} fazendo
+uso de memoria distribuída com o \textit{OpenMPI} comparando os resultados do
+benchmarking deste algoritmo com os resultados obtidos na fase anterior.
 
-De notar que todos os benchmarks descritos foram efeutados em nós do tipo 641 do
+De notar que todos os benchmarks descritos foram efeutados em nós do tipo 642 do
 cluster \textit{SeARCH}, e todos os executáveis foram compilados o
 \textit{MPIcc} na versão 1.8.1 do \textit{OpenMPI}, utilizando a versão
 7.2.0 do \textit{gcc}, e com as flags \textit{-O3 -std=c11} para garantir
