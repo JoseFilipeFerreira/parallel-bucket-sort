@@ -179,6 +179,44 @@ número de baldes não compensa o esforço extra.
 
 \appendix
 
+\chapter{OpenMP vs OpenMPI}
+
 \chapter{Primeira Implementação do algoritmo} \label{apx:slowpar}
+
+A primeira implementação do algoritmo em relação à versão final toma uma
+abordagem mais conservadora sobre as comunicações, reduzindo-as, sacrificando a
+quantidade de código paralelo a ser corrido. Aqui apenas é paralelizada a
+segunda fase do algoritmo, as comunicações entre processos passam a ser apenas P
+comunicações de máximo (N/P + 1) * 4 bytes para a distribuição de chunks pelos
+processos, com P sendo o número de processos e N o número de elementos total a
+ordenar. Depois dos chunks distribuidos, cada processo forma os seus baldes e os
+envia ao processo que dividiu os chunks inicialmente e este irá proceder à fase
+de ordenação e junção dos baldes ordenados para retornar.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/esquemas/algoritmo_graph1.png}
+    \caption{Arquitetura da Solução}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+Processes & Time(Seconds) \\ \hline
+2         & 14,002223     \\ \hline
+4         & 13,410518     \\ \hline
+8         & 13,971147     \\ \hline
+16        & 14,244233     \\ \hline
+32        & 14,635107     \\ \hline
+\end{tabular}
+\caption{Tempos de execução da versão inicial do algoritmo}
+\label{tab:oldtimes}
+\end{table}
+
+Como podemos ver na tabela \ref{tab:oldtimes}, os tempos de execução são todos
+semelhantes, pelo que não houve nenhum speedup perante o aumento de processos.
+Podemos concluir também que a parte com maior intensidade computacional do
+algoritmo será a terceira fase, sendo a seguinte a ser paralelizada.
 
 \end{document}
