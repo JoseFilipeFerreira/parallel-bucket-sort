@@ -3,7 +3,7 @@
 \usepackage[portuguese]{babel}
 \usepackage{hyperref}
 \usepackage{a4wide}
-\hypersetup{pdftitle={PCP - OpenMP},
+\hypersetup{pdftitle={PCP - OpenMPI},
 pdfauthor={João Teixeira, José Ferreira},
 colorlinks=true,
 urlcolor=blue,
@@ -27,7 +27,7 @@ linkcolor=black}
 
 \begin{document}
 
-\title{Paradigmas de Computação Paralela\\Bucket Sort com OpenMP}
+\title{Paradigmas de Computação Paralela\\Bucket Sort com OpenMPI}
 \author{João Teixeira (A85504) \and José Filipe Ferreira (A83683)}
 \date{\today}
 
@@ -73,11 +73,17 @@ de elementos aleatórios, entre -1000 e 500000.
 
 \chapter{OpenMPI} \label{chap:ompi}
 
+\section{Descrição da Implementação}
 O algoritmo de Bucket Sort adaptado para \textit{MPI} divide-se em quatro fases,
 divisão dos elementos em chunks para serem enviados para os diferentes
 processos, separação dos elementos pelos diversos baldes, junção e ordenação dos
 baldes dos diferentes processos, e por fim a agregação dos baldes ordenados num
-array final.
+array final. A segunda e terceira fase é feita em paralelo, enquanto que a
+primeira e ultima são realizadas apenas por um processo.
+
+Numa implementação inicial do algoritmo paralelo, apenas paralelizamos a
+segunda fase, onde os resultados e implementação são explicados em mais detalhe
+no apêndice \ref{apx:slowpar}.
 
 A nossa implementação realiza a primeira fase de divisão dos elementos em chunks
 num unico processo, onde é difundido o máximo e o minímo dos elementos a
@@ -106,7 +112,66 @@ envio no máximo com N * 4 bytes.
 Neste processo que recebeu os arrays de todos os processos que trataram de algum
 bucket, são agrupados e retornado o resultado final.
 
+\pagebreak
+\section{Análise dos resultados}
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+        Processes & Time(Seconds) \\ \hline
+        2         & 10,170775     \\ \hline
+        4         & 10,061176     \\ \hline
+        8         & 6,581753      \\ \hline
+        16        & 2,5495        \\ \hline
+        32        & 6,165742      \\ \hline
+    \end{tabular}
+    \caption{\label{tab:Times}Tempos de execução do algoritmo, com 10 baldes}
+\end{table}
+
+Passar de dois para quatro não se viram grandes ganhos, pois a carga
+computacional por processo ainda é alta, e são realizadas 2 vezes mais
+comunicações entre processos, de tamanho ainda considerável. Para 8 e 16
+processos vemos speedups mais substanciais, com a carga computacional do
+algoritmo a ser mais distribuida, e a as comunicações entre processos a ser cada
+vez mais rápida, graças à diminuição do comprimento das mensagens transmitidas.
+
+Para os 32 processos, vemos um aumento dos tempos de execução, pois como quando
+o número de processos é maior que o número de processos, muitos deles têm uma
+carga computacional muito baixa e tendo uma carga muito pouco balanceada entre
+processos, fazendo notar-se mais o overhead de ter processos extra.
+
+\section{Variação do número de baldes}
+
+Com a análise dos resultados da execução do programa com 10 baldes, vemos que
+para um número de processos maior que o número de baldes existe uma grande
+penalização. Para tentar um melhor balanceamento de carga, efetuamos testes com
+diferentes número de baldes, em relação ao número de processos.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|l|l|l|l|l|}
+        \hline
+   & 1/2x      & 1x       & 2x        & 4x       \\ \hline
+        2  & -         & 8,901732 & 14,998655 & 8,239823 \\ \hline
+        4  & 10,124461 & 9,067322 & 9,492485  & 7,405527 \\ \hline
+        8  & 4,936002  & 4,676249 & 7,602705  & 7,210904 \\ \hline
+        16 & 2,908431  & 3,643568 & 4,996264  & 4,844009 \\ \hline
+        32 & 4,103812  & 2,907007 & 3,711787  & 6,2266   \\ \hline
+    \end{tabular}
+    \caption{\label{tab:varb}Tempos de execução do algoritmo, com o número de
+    baldes como um múltiplo de número de processos}
+\end{table}
+
+Como podemos ver, quando o número de baldes é metade do número de processos, a
+carga ainda não é balanceada e embora sejam tempos mais baixos que nas execuções
+de 10 baldes fixos, não representam o melhor caso. Com a carga melhor
+distribuida, onde cada processo irá processar um balde apenas, vemos as melhores
+execuções. Acima disto, o overhead das comunicações acrescidas pelo aumento do
+número de baldes não compensa o esforço extra.
+
 \appendix
+
+\chapter{Primeira Implementação do algoritmo} \label{apx:slowpar}
 
 \chapter{Benchmarking}
 \begin{table}[h]
