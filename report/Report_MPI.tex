@@ -1,0 +1,209 @@
+\documentclass[a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\usepackage{hyperref}
+\usepackage{a4wide}
+\hypersetup{pdftitle={PCP - OpenMP},
+pdfauthor={João Teixeira, José Ferreira},
+colorlinks=true,
+urlcolor=blue,
+linkcolor=black}
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{appendix}
+\usepackage{tikz}
+\usepackage{authblk}
+\usepackage{bashful}
+\usepackage{verbatim}
+\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage{mwe}
+\usepackage[parfill]{parskip}
+\usetikzlibrary{positioning,automata,decorations.markings}
+\AfterEndEnvironment{figure}{\noindent\ignorespaces}
+\AfterEndEnvironment{table}{\noindent\ignorespaces}
+
+\begin{document}
+
+\title{Paradigmas de Computação Paralela\\Bucket Sort com OpenMP}
+\author{João Teixeira (A85504) \and José Filipe Ferreira (A83683)}
+\date{\today}
+
+\begin{center}
+    \begin{minipage}{0.75\linewidth}
+        \centering
+        \includegraphics[width=0.4\textwidth]{images/eng.jpeg}\par\vspace{1cm}
+        \vspace{1.5cm}
+        \href{https://www.uminho.pt/PT}
+        {\color{black}{\scshape\LARGE Universidade do Minho}} \par
+        \vspace{1cm}
+        \href{https://www.di.uminho.pt/}
+        {\color{black}{\scshape\Large Departamento de Informática}} \par
+        \vspace{1.5cm}
+        \maketitle
+    \end{minipage}
+\end{center}
+
+\tableofcontents
+
+\pagebreak
+
+\chapter{Introdução}
+O algoritmo escolhido para o projeto da unidade curricular de Computação
+Paralela e Distribuída foi o \textit{Bucket Sort}.
+
+Inicialmente desenvolvemos uma versão sequencial do projeto e procedemos ao
+\textit{benchmarking} do programa resultante. Em seguida convertemos a
+implementação sequencial numa versão com utilização de memoria partilhada
+fazendo uso de \textit{OpenMP} e comparamos o resultado com a versão sequencial
+desenvolvida anteriormente.
+
+Ao longo deste relatório iremos descrever a metodologia utilizada e os
+resultados de \textit{benchmarking} obtidos ao longo deste projeto.
+
+De notar que todos os benchmarks descritos foram efeutados em nós do tipo 641 do
+cluster \textit{SeARCH}, e todos os executáveis foram compilados o
+\textit{MPIcc} na versão 1.8.1 do \textit{OpenMPI}, utilizando a versão
+7.2.0 do \textit{gcc}, e com as flags \textit{-O3 -std=c11} para garantir 
+a maior consistência entre os diferentes benchmarks. Na
+ausência de indicação, os benchmarks foram efetuados com um input de 100000000
+de elementos aleatórios, entre -1000 e 500000.
+
+\chapter{OpenMPI} \label{chap:ompi}
+
+O algoritmo de Bucket Sort adaptado para \textit{MPI} divide-se em quatro fases,
+divisão dos elementos em chunks para serem enviados para os diferentes
+processos, separação dos elementos pelos diversos baldes, junção e ordenação dos
+baldes dos diferentes processos, e por fim a agregação dos baldes ordenados num
+array final.
+
+A nossa implementação realiza a primeira fase de divisão dos elementos em chunks
+num unico processo, onde é difundido o máximo e o minímo dos elementos a
+ordenar, e o tamanho dos buffers que os diferentes processos devem ter para
+garantir a boa receção do chunk que lhe corresponde. Depois desta difusão, é
+enviado a todos os processos o chunk correspondendo, realizando P envios, um por
+cada processo, com o tamanho máximo de (P/N + 1) * 4 bytes, onde P é o número de
+processos e o N corresponde ao número de elementos total a ordenar.
+
+Recebido pelos processos os chunks respetivos, cada um vai percorrer os
+elementos recebidos, atribuindo-o cada um ao respetivo balde. Depois de todos os
+baldes preenchidos, cada processo vai enviar cada balde para um processo que
+irá juntar ao mesmo balde vindo dos outros processos. Esta distribuição é
+efetuada para que todos os processos recebam um número equilibrado de
+buckets, onde cada processo irá receber B/P baldes, caso existam mais baldes
+que processos, senão irá receber ou um ou zero baldes, dependendo do seu id. 
+Aqui cada processo irá realizar B envios, com um máximo (P/N + 1) * 4 bytes, 
+com B sendo o número de baldes, e o P e N indicados acima.
+
+Finda a receção de todos os buckets que um processo tem para processar, estes
+irão proceder à ordenação destes, e finda esta são agrupados num só array os
+baldes consecutivos e ordenados. Depois deste passo, é enviado este array para o
+processo que tinha inicialmente feito a distribuição dos chunks. É realizado um
+envio no máximo com N * 4 bytes.
+
+Neste processo que recebeu os arrays de todos os processos que trataram de algum
+bucket, são agrupados e retornado o resultado final.
+
+\appendix
+
+\chapter{Benchmarking}
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|l|l|l|l|l|}
+        \hline
+        \multicolumn{5}{|c|}{Times}                                      \\ \hline
+        Threads & Old Critical & Old Task    & New       & New Collapsed \\ \hline
+        Seq     & 16,209999    & 16,209999   & 22,299999 & 22,299999     \\ \hline
+        2       & 43,23        & 305,169983  & 11,403177 & 11,968859     \\ \hline
+        4       & 100,150002   & 937,929993  & 6,880816  & 6,872915      \\ \hline
+        8       & 187,929993   & 2227,460205 & 4,622566  & 5,965684      \\ \hline
+        16      & 479,750031   & 5547,610352 & 2,362948  & 4,678829      \\ \hline
+        32      & 1213,959961  & 12624,78906 & 2,363651  & 4,859851      \\ \hline
+        64      & 1726,070068  & 11589,56934 & 2,449052  & 4,059251      \\ \hline
+    \end{tabular}
+    \caption{\label{tab:Times}Tempos de execução iniciais, com 10 baldes}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|l|l|l|l|l|l|}
+        \hline
+        Threads & 5 buckets & 10 buckets & 20 buckets & 40 buckets & 80 bucket \\ \hline
+        2       & 12.520761 & 11.218051  & 12.921473  & 17.016363  & 25.398283 \\ \hline
+        4       & 8.365767  & 6.739361   & 6.511606   & 8.512317   & 12.743460 \\ \hline
+        8       & 5.218658  & 4.984042   & 3.952061   & 4.323404   & 6.438317  \\ \hline
+        16      & 5.344770  & 3.167999   & 3.042659   & 2.632886   & 3.465635  \\ \hline
+        32      & 5.248249  & 3.147622   & 2.148584   & 2.392601   & 2.836905  \\ \hline
+        64      & 5.270648  & 3.161402   & 2.366316   & 2.002006   & 3.260201  \\ \hline
+    \end{tabular}
+    \caption{\label{tab:fix_size}Tempos de execução, fazendo variar o
+    número de baldes utilizados}
+\end{table}
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{|l|l|l|l|l|l|}
+        \hline
+        Threads & n\_threads & 2*n\_threads & 4*n\_threads & 8*n\_threads & 16*n\_threads \\ \hline
+        2       & 11.395469  & 10.310162    & 10.808166    & 12.206050    & 15.356203     \\ \hline
+        4       & 6.129920   & 5.490817     & 6.108120     & 7.681805     & 11.012663     \\ \hline
+        8       & 3.719489   & 3.100843     & 3.883367     & 5.560686     & 9.027642      \\ \hline
+        16      & 2.217584   & 2.001313     & 2.854720     & 4.599587     & 8.157944      \\ \hline
+        32      & 1.824530   & 2.292776     & 3.511230     & 6.276313     & 11.743461     \\ \hline
+        64      & 2.486487   & 3.223805     & 5.932982     & 10.554493    & 20.222078     \\ \hline
+    \end{tabular}
+    \caption{\label{tab:var_size}Tempos de execução, fazendo variar o
+    número de baldes, com base no número de threads.}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|l|l|l|l|l|l|l|}
+        \hline
+        Threads & 30       & 32       & 34       & 36       & 38       & 40       \\ \hline
+        16      & 2.085598 & 2.008397 &          &          &          &          \\ \hline
+        32      & 1.846964 & 1.813501 & 2.572607 & 2.442342 & 2.408187 & 2.349852 \\ \hline
+        40      & 1.907169 & 1.799508 & 1.779662 & 1.718217 & 1.788759 & 1.881975 \\ \hline
+        64      & 2.599405 & 2.536593 & 2.106488 & 1.911450 & 1.976940 & 1.977957 \\ \hline
+    \end{tabular}
+    \caption{\label{tab:cutoff}Tempos de execução, com o número de baldes a ser o
+    dobro do número de threads, e variando o número máximo de baldes
+    utilizados.}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \multicolumn{1}{|c|}{Threads} & \multicolumn{1}{c|}{Time} & \multicolumn{1}{c|}{Speedup} \\ \hline
+        Seq                           & 20,629999                 & 1                            \\ \hline
+        2                             & 10,346263                 & 1,993956562                  \\ \hline
+        4                             & 5,57325                   & 3,701610192                  \\ \hline
+        8                             & 3,288632                  & 6,273124813                  \\ \hline
+        16                            & 2,199246                  & 9,380487222                  \\ \hline
+        32                            & 1,677771                  & 12,29607557                  \\ \hline
+        64                            & 1,814721                  & 11,36813813                  \\ \hline
+    \end{tabular}
+    \caption{\label{tab:final}Tempos finais de execução e respetivo speedup, com a
+    versão sequencial a utilizar 4 baldes.}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \multicolumn{1}{|c|}{Threads} & \multicolumn{1}{c|}{Time} & \multicolumn{1}{c|}{Speedup} \\ \hline
+        Seq                           & 1,57                      & 1                            \\ \hline
+        2                             & 1,485135                  & 1,057142953                  \\ \hline
+        4                             & 1,49086                   & 1,053083455                  \\ \hline
+        8                             & 1,498286                  & 1,047864026                  \\ \hline
+        16                            & 1,504521                  & 1,043521493                  \\ \hline
+        32                            & 1,45915                   & 1,075968886                  \\ \hline
+        64                            & 1,456144                  & 1,078190069                  \\ \hline
+    \end{tabular}
+    \caption{\label{tab:unbal}Tempos de execução para 10000000 elementos aleatórios entre -100 e 100,
+    com um elemento sendo 500000}
+\end{table}
+\end{document}
