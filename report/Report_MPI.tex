@@ -66,7 +66,7 @@ resultados de \textit{benchmarking} obtidos ao longo deste projeto.
 De notar que todos os benchmarks descritos foram efeutados em nós do tipo 641 do
 cluster \textit{SeARCH}, e todos os executáveis foram compilados o
 \textit{MPIcc} na versão 1.8.1 do \textit{OpenMPI}, utilizando a versão
-7.2.0 do \textit{gcc}, e com as flags \textit{-O3 -std=c11} para garantir 
+7.2.0 do \textit{gcc}, e com as flags \textit{-O3 -std=c11} para garantir
 a maior consistência entre os diferentes benchmarks. Na
 ausência de indicação, os benchmarks foram efetuados com um input de 100000000
 de elementos aleatórios, entre -1000 e 500000.
@@ -86,9 +86,9 @@ segunda fase, onde os resultados e implementação são explicados em mais detal
 no apêndice \ref{apx:slowpar}.
 
 A nossa implementação realiza a primeira fase de divisão dos elementos em chunks
-num unico processo, onde é difundido o máximo e o minímo dos elementos a
+num único processo, onde é difundido o máximo e o mínimo dos elementos a
 ordenar, e o tamanho dos buffers que os diferentes processos devem ter para
-garantir a boa receção do chunk que lhe corresponde. Depois desta difusão, é
+garantir a boa recessão do chunk que lhe corresponde. Depois desta difusão, é
 enviado a todos os processos o chunk correspondendo, realizando P envios, um por
 cada processo, com o tamanho máximo de (P/N + 1) * 4 bytes, onde P é o número de
 processos e o N corresponde ao número de elementos total a ordenar.
@@ -99,11 +99,11 @@ baldes preenchidos, cada processo vai enviar cada balde para um processo que
 irá juntar ao mesmo balde vindo dos outros processos. Esta distribuição é
 efetuada para que todos os processos recebam um número equilibrado de
 buckets, onde cada processo irá receber B/P baldes, caso existam mais baldes
-que processos, senão irá receber ou um ou zero baldes, dependendo do seu id. 
-Aqui cada processo irá realizar B envios, com um máximo (P/N + 1) * 4 bytes, 
+que processos, senão irá receber ou um ou zero baldes, dependendo do seu id.
+Aqui cada processo irá realizar B envios, com um máximo (P/N + 1) * 4 bytes,
 com B sendo o número de baldes, e o P e N indicados acima.
 
-Finda a receção de todos os buckets que um processo tem para processar, estes
+Finda a recessão de todos os buckets que um processo tem para processar, estes
 irão proceder à ordenação destes, e finda esta são agrupados num só array os
 baldes consecutivos e ordenados. Depois deste passo, é enviado este array para o
 processo que tinha inicialmente feito a distribuição dos chunks. É realizado um
@@ -134,11 +134,11 @@ bucket, são agrupados e retornado o resultado final.
     \caption{\label{tab:Times}Tempos de execução do algoritmo, com 10 baldes}
 \end{table}
 
-Como visto na tabela \ref{tab:Times} passar de dois para quatro não 
-se viram grandes ganhos, pois a carga computacional por processo ainda 
-é alta, e são realizadas 2 vezes mais comunicações entre processos, 
-de tamanho ainda considerável. Para 8 e 16 processos vemos speedups 
-mais substanciais, com a carga computacional do algoritmo a ser 
+Como visto na tabela \ref{tab:Times} passar de dois para quatro não
+se viram grandes ganhos, pois a carga computacional por processo ainda
+é alta, e são realizadas 2 vezes mais comunicações entre processos,
+de tamanho ainda considerável. Para 8 e 16 processos vemos speedups
+mais substanciais, com a carga computacional do algoritmo a ser
 mais distribuida, e a as comunicações entre processos a ser cada
 vez mais rápida, graças à diminuição do comprimento das mensagens transmitidas.
 
@@ -172,7 +172,7 @@ diferentes número de baldes, em relação ao número de processos.
 Como podemos ver, quando o número de baldes é metade do número de processos, a
 carga ainda não é balanceada e embora sejam tempos mais baixos que nas execuções
 de 10 baldes fixos, não representam o melhor caso. Com a carga melhor
-distribuida, onde cada processo irá processar um balde apenas, vemos as melhores
+distribuída, onde cada processo irá processar um balde apenas, vemos as melhores
 execuções. Acima disto, o overhead das comunicações acrescidas pelo aumento do
 número de baldes não compensa o esforço extra.
 
