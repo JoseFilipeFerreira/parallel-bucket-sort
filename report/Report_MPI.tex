@@ -180,6 +180,26 @@ número de baldes não compensa o esforço extra.
 \appendix
 
 \chapter{OpenMP vs OpenMPI}
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        Workers & OpenMP    & OpenMPI  & Speedup      \\ \hline
+        2       & 11,403177 & 8,901732 & 1,28100655   \\ \hline
+        4       & 6,880816  & 9,067322 & 0,7588586796 \\ \hline
+        8       & 4,622566  & 4,676249 & 0,9885200724 \\ \hline
+        16      & 2,362948  & 3,643568 & 0,6485258406 \\ \hline
+        32      & 2,363651  & 2,907007 & 0,8130874814 \\ \hline
+    \end{tabular}
+    \caption{Tempos de OpenMP vs OpenMPI}
+    \label{tab:ompi}
+\end{table}
+
+Analisando em detalhe a tabela \ref{tab:ompi} podemos ver que para o mesmo
+número de processos ou threads, conseguimos tempos semelhantes. Como a nossa
+implementação do OpenMP replica trabalho, o que não nos permitiu ter speedups em
+relação à versão sequencial, a não replicação do trabalho foi suficiente para
+amortizar o overhead da comunicação entre processos da versão OpenMPI.
 
 \chapter{Primeira Implementação do algoritmo} \label{apx:slowpar}
 
@@ -200,18 +220,18 @@ de ordenação e junção dos baldes ordenados para retornar.
 \end{figure}
 
 \begin{table}[h]
-\centering
-\begin{tabular}{|c|c|}
-\hline
-Processes & Time(Seconds) \\ \hline
-2         & 14,002223     \\ \hline
-4         & 13,410518     \\ \hline
-8         & 13,971147     \\ \hline
-16        & 14,244233     \\ \hline
-32        & 14,635107     \\ \hline
-\end{tabular}
-\caption{Tempos de execução da versão inicial do algoritmo}
-\label{tab:oldtimes}
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+        Processes & Time(Seconds) \\ \hline
+        2         & 14,002223     \\ \hline
+        4         & 13,410518     \\ \hline
+        8         & 13,971147     \\ \hline
+        16        & 14,244233     \\ \hline
+        32        & 14,635107     \\ \hline
+    \end{tabular}
+    \caption{Tempos de execução da versão inicial do algoritmo}
+    \label{tab:oldtimes}
 \end{table}
 
 Como podemos ver na tabela \ref{tab:oldtimes}, os tempos de execução são todos
