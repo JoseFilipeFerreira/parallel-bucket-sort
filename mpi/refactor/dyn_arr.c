@@ -48,7 +48,7 @@ int dyn_arr_pop(dyn_arr* arr) {
 }
 
 void dyn_arr_print(const dyn_arr arr, FILE* buff, const char* separator) {
-    for(int i = 0; i < arr.len; fprintf(buff, "%d: %d%s", getpid(), arr.array[i++], separator));
+    for(int i = 0; i < arr.len; fprintf(buff, "%d%s", arr.array[i++], separator));
 }
 
 dyn_arr dyn_arr_from_file(const char* fname) {

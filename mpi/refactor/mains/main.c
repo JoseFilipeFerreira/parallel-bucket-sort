@@ -1,7 +1,7 @@
 #include<mpi.h>
 #include <stdio.h>
 #include<unistd.h>
-#include "buckets.h"
+#include "../buckets.h"
 
 void send_dyn_arr(const dyn_arr* arr, const int dest, const int tag) {
     MPI_Request r;
@@ -73,21 +73,24 @@ void balanced_bucket_send(const buckets* b, const size_t proc_units, const int r
 
 int main(int argc, char** argv) {
     int rank, size_rank;
-    int n_buckets = 10;
     stats stats;
     dyn_arr* chunks;
     dyn_arr buf;
     MPI_Status status;
+    double time;
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size_rank);
+    int n_buckets = size_rank;
 #ifdef NDEBUG
     fprintf(stderr, "rank %d -> pid %d\n", rank, getpid());
 #endif
 
     if(rank == 0) {
+
         //Load elems to array
         buf = dyn_arr_from_file(argv[1]);
+        time = MPI_Wtime();
         int max_chunk_size;
         //Build chunks to send to each process
         chunks = dyn_arr_chunks(&buf, size_rank, &max_chunk_size);
@@ -151,6 +154,7 @@ int main(int argc, char** argv) {
             dyn_arr_append(&buff, r);
         }
         //Print Results
+        fprintf(stderr, "Time = %f\n", MPI_Wtime() - time);
         dyn_arr_print(buff, stdout, "\n");
     }
     MPI_Finalize();
