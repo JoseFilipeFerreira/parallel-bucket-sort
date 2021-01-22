@@ -134,6 +134,12 @@ bucket, são agrupados e retornado o resultado final.
     \end{tabular}
     \caption{\label{tab:Times}Tempos de execução do algoritmo, com 10 baldes}
 \end{table}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/speedupseq.jpeg}
+    \caption{Speedup MPI vs Sequencial}
+    \label{img:smpi}
+\end{figure}
 
 Como visto na tabela \ref{tab:Times} passar de dois para quatro não
 se viram grandes ganhos, pois a carga computacional por processo ainda
@@ -148,6 +154,10 @@ o número de processos é maior que o número de processos, muitos deles têm um
 carga computacional muito baixa e tendo uma carga muito pouco balanceada entre
 processos, fazendo notar-se mais o overhead de ter processos extra.
 
+A versão sequencial utilizada para o calculo dos speedups na figura
+\ref{img:smpi} foi a versão mais
+rápida da fase anterior, com um tempo de execução para o mesmo input de
+16.209999 segundos. 
 \section{Variação do número de baldes}
 
 Com a análise dos resultados da execução do programa com 10 baldes, vemos que
