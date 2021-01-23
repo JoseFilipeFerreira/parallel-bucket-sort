@@ -189,6 +189,30 @@ número de baldes não compensa o esforço extra.
 
 \appendix
 
+\chapter{Algoritmo em dois nodos distintos}
+
+Fazendo uso da flag do \textit{mpirun} \textit{--map-by node}, que aloca de
+forma equilibrada os processos pelos nodos existentes a correr, fizemos alguns
+testes para ver como se comportava o algoritmo quando existe o custo extra da
+comunicação entre nodos. Como visto na tabela \ref{tab:nodes}, e comparando com os tempos da
+tabela \ref{tab:Times}, vemos que para este algoritmo e carga, a carga
+computacional não é suficiente para dissolver o custo acrescido nas comunicações
+entre máquinas.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{ccc}
+        Processes & Time(Seconds) & Speedup      \\
+        2         & 20,496617     & 0,4962172538 \\
+        4         & 12,927193     & 0,7782954892 \\
+        8         & -             & -            \\
+        16        & 7,983936      & 0,3193287121 \\
+        32        & 7,414105      & 0,8316232371
+    \end{tabular}
+    \caption{Tempos de execução do algoritmo em dois nodos}
+    \label{tab:nodes}
+\end{table}
+
 \chapter{OpenMP vs OpenMPI}
 \begin{table}[h]
     \centering
