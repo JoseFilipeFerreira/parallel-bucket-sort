@@ -44,10 +44,14 @@ buckets buckets_join(const buckets* to_join, const int to_join_size, const int n
 
 buckets buckets_from_dyn_arr(const dyn_arr* arr, const int n_buckets, const stats* stats) {
     buckets* barr;
+    int n_threads;
 #pragma omp parallel
     {
 #pragma omp single
-        barr = malloc(omp_get_num_threads() * sizeof(buckets));
+        {
+            n_threads = omp_get_num_threads();
+            barr = malloc(n_threads * sizeof(buckets));
+        }
         barr[omp_get_thread_num()] = buckets_new(n_buckets, arr->len);
 #pragma omp for
         for(size_t i = 0; i < arr->len; i++) {
@@ -62,7 +66,7 @@ buckets buckets_from_dyn_arr(const dyn_arr* arr, const int n_buckets, const stat
             dyn_arr_push(z, elem);
         }
     }
-    return buckets_join(barr, omp_get_num_threads(), n_buckets, arr->len);
+    return buckets_join(barr, n_threads, n_buckets, arr->len);
 }
 
 dyn_arr buckets_to_dyn_arr(const buckets* b) {
