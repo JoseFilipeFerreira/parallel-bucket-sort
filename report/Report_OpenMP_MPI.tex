@@ -58,11 +58,15 @@ Numa primeira fase do trabalho desenvolvemos uma versão sequencial do projeto e
 procedemos ao \textit{benchmarking} do programa resultante. Em seguida
 convertemos a implementação sequencial numa versão com utilização de memoria
 partilhada fazendo uso de \textit{OpenMP} e comparamos o resultado com a versão
-sequencial desenvolvida anteriormente.
+sequencial desenvolvida anteriormente. Posteriormente desenvolvemos uma nova
+versao do \textit{bucket sort} fazendo uso de memoria distribuída com o
+\textit{OpenMPI} comparando os resultados do benchmarking deste algoritmo
+com os resultados obtidos na fase anterior.
 
-Nesta segunda fase desenvolvemos uma nova versao do \textit{bucket sort} fazendo
-uso de memoria distribuída com o \textit{OpenMPI} comparando os resultados do
-benchmarking deste algoritmo com os resultados obtidos na fase anterior.
+Finalmente, nesta terceira fase do trabalho, iremos desenvolver uma nova versao
+fazendo uso de uma arquitetura de memoria mista com o uso de \textit{OpenMP}
+e \textit{OpenMPI}. Apresentando resultados dos benchmarkings realizados e
+comparando-os com os resultados obtidos nas fases anteriores.
 
 De notar que todos os benchmarks descritos foram efeutados em nós do tipo 642 do
 cluster \textit{SeARCH}, e todos os executáveis foram compilados o
@@ -71,7 +75,6 @@ cluster \textit{SeARCH}, e todos os executáveis foram compilados o
 a maior consistência entre os diferentes benchmarks. Na
 ausência de indicação, os benchmarks foram efetuados com um input de 100000000
 de elementos aleatórios, entre -1000 e 500000.
-
 
 
 \chapter{OpenMPI} \label{chap:ompi}
