@@ -101,12 +101,12 @@ testes, utilizando 32 cores de cada nodo, variando o número de processos MPI e
 threads OMP de forma a encontrar o ponto ideal.
 
 \subsection{Análise dos resultados obtidos}
-\begin{table}[]
+\begin{table}[h]
     \centering
     \begin{tabular}{|c|c|}
         \hline
         \multicolumn{2}{|c|}{Execution Times}                                                       \\ \hline
-        \begin{tabular}[c]{@{}c@{}}4 processes by socket\\ (4 OMP threads)\end{tabular} & 8,850058  \\ \hline
+        \begin{tabular}[c]{@{}c@{}}4 processes by socket\\ (4 OMP threads)\end{tabular} & 8.023892  \\ \hline
         \begin{tabular}[c]{@{}c@{}}2 processes by socket\\ (8 OMP threads)\end{tabular} & 8,850058  \\ \hline
         \begin{tabular}[c]{@{}c@{}}1 process by socket\\ (16 OMP threads)\end{tabular}  & 14,353691 \\ \hline
         \begin{tabular}[c]{@{}c@{}}1 process by node\\ (32 OMP threads)\end{tabular}    & 23,873869 \\ \hline
@@ -118,9 +118,20 @@ threads OMP de forma a encontrar o ponto ideal.
 \end{table}
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.6\textwidth]{images/speedupseq.jpeg}
+    \includegraphics[width=0.6\textwidth]{images/speedupsompi.png}
     \caption{Speedup MPI vs Sequencial}
     \label{img:smpi}
 \end{figure}
+
+Com a análise destes resultados, concluimos que a utilização de OpenMP neste
+algoritmo não apresentou vantagens significativas relativamente à versão que
+apenas utiliza MPI pois, da forma que o algoritmo está estruturado, o custo de
+comunicação entre processos manteve-se, e o aumento do paralelismo dentro de
+cada processo não foi suficiente para absorver este custo.
+
+Vemos que o melhor ponto é quando são usados 16 processos distribuidos pelas 4
+sockets utilizadas, com 4 threads OpenMP a correr em cada, sendo este ponto onde
+existe uma melhor relação entre o custo de comunicação e o custo de criar
+threads OpenMP, tendo em conta a carga computacional existente.
 
 \end{document}
